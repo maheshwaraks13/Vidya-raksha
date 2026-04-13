@@ -1,0 +1,63 @@
+# VidyaRaksha — Docker Compose
+# Orchestrates backend, frontend, and database containers
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: vidyaraksha-db
+    environment:
+      POSTGRES_DB: vidyaraksha
+      POSTGRES_USER: vidyaraksha_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-vidyaraksha_pass}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vidyaraksha_user -d vidyaraksha"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Flask Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: vidyaraksha-backend
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=postgresql://vidyaraksha_user:${DB_PASSWORD:-vidyaraksha_pass}@db:5432/vidyaraksha
+      - SECRET_KEY=${SECRET_KEY:-change-this-in-production}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-this-jwt-secret}
+      - SMS_PROVIDER=${SMS_PROVIDER:-simulator}
+      - FAST2SMS_API_KEY=${FAST2SMS_API_KEY:-}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN:-}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER:-}
+    ports:
+      - "5000:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Nginx Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: vidyaraksha-frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

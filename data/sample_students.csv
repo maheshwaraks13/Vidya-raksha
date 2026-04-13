@@ -1,0 +1,26 @@
+student_id,name,age,gender,grade,attendance_percentage,exam_scores,previous_failures,distance_to_school,family_income,parent_education_level,parent_occupation,transport_availability,internet_access,health_issues,parent_name,parent_phone
+S101,Aarav Deshmukh,14,M,8,72,65,0,4,12000,2,1,1,1,0,Ramesh Deshmukh,9876543001
+S102,Saanvi Kulkarni,13,F,7,85,78,0,2,18000,2,2,1,1,0,Vijay Kulkarni,9876543002
+S103,Vihaan Jadhav,15,M,9,45,32,2,10,5500,0,0,0,0,1,Sunil Jadhav,9876543003
+S104,Ananya Patil,14,F,8,38,28,2,12,4000,0,0,0,0,1,Prakash Patil,9876543004
+S105,Arjun Shinde,16,M,10,55,48,1,7,8000,1,1,0,0,0,Arun Shinde,9876543005
+S106,Diya Chavan,13,F,7,92,88,0,1,25000,3,3,1,1,0,Dinesh Chavan,9876543006
+S107,Krishna More,15,M,9,42,35,2,11,6000,0,0,0,0,1,Shankar More,9876543007
+S108,Isha Bhosale,14,F,8,68,55,1,5,10000,1,1,0,0,0,Govind Bhosale,9876543008
+S109,Rohan Kale,16,M,10,35,25,3,15,4500,0,0,0,0,1,Dattatray Kale,9876543009
+S110,Meera Salunkhe,13,F,7,78,72,0,3,15000,2,2,1,1,0,Hanumant Salunkhe,9876543010
+S111,Aditya Deshpande,15,M,9,62,50,1,6,9500,1,1,0,0,0,Yashwant Deshpande,9876543011
+S112,Riya Mane,14,F,8,88,82,0,2,22000,3,2,1,1,0,Sandip Mane,9876543012
+S113,Tanmay Thorat,16,M,10,48,40,2,9,7000,1,1,0,0,0,Bhagwan Thorat,9876543013
+S114,Shreya Nikam,13,F,7,33,22,2,14,3500,0,0,0,0,1,Ramesh Nikam,9876543014
+S115,Om Sutar,15,M,9,75,68,0,4,13000,2,2,1,1,0,Sunil Sutar,9876543015
+S116,Pooja Wagh,14,F,8,58,45,1,8,7500,1,0,0,0,0,Prakash Wagh,9876543016
+S117,Siddharth Gavhane,16,M,10,40,30,3,13,5000,0,0,0,0,1,Arun Gavhane,9876543017
+S118,Nandini Bhandare,13,F,7,82,75,0,3,16000,2,2,1,1,0,Dinesh Bhandare,9876543018
+S119,Yash Lokhande,15,M,9,52,42,1,7,8500,1,1,0,0,0,Vijay Lokhande,9876543019
+S120,Divya Sawant,14,F,8,90,85,0,2,20000,3,3,1,1,0,Shankar Sawant,9876543020
+S121,Harsh Sonawane,16,M,10,30,20,3,16,3000,0,0,0,0,1,Govind Sonawane,9876543021
+S122,Kavita Deshmukh,13,F,7,70,62,0,5,11000,1,1,0,0,0,Dattatray Deshmukh,9876543022
+S123,Pranav Patil,15,M,9,65,55,1,6,9000,1,2,0,0,0,Hanumant Patil,9876543023
+S124,Sakshi Jadhav,14,F,8,44,36,2,10,6500,0,0,0,0,0,Yashwant Jadhav,9876543024
+S125,Atharva Kulkarni,16,M,10,80,74,0,3,17000,2,2,1,1,0,Sandip Kulkarni,9876543025
