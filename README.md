@@ -195,3 +195,4 @@ python -m pytest tests/ -v
 
 ---
 *Built with ❤️ for rural education in India*
+DIRECT :: https://maheshwaraks13.github.io/Vidya-raksha/
