@@ -27,6 +27,37 @@ async function api(endpoint, options = {}) {
 }
 
 // ═══════════════════ AUTH ═══════════════════
+async function handleRegister(e) {
+  e.preventDefault();
+  const full_name = document.getElementById('reg-name').value;
+  const email = document.getElementById('reg-email').value;
+  const username = document.getElementById('reg-user').value;
+  const password = document.getElementById('reg-pass').value;
+  const role = document.getElementById('reg-role').value;
+  
+  const el = document.getElementById('reg-error');
+  el.style.display = 'none';
+  
+  const data = await api('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify({ full_name, email, username, password, role })
+  });
+  
+  if (data && data.message) {
+    alert('Registration successful! Please login.');
+    document.getElementById('register-view').style.display = 'none';
+    document.getElementById('login-view').style.display = 'block';
+    document.getElementById('login-user').value = username;
+    document.getElementById('login-pass').value = password;
+  } else {
+    if (data && data.error) {
+      el.textContent = data.error;
+    } else {
+      el.textContent = 'Network error or backend is offline. Registration failed.';
+    }
+    el.style.display = 'block';
+  }
+}
 async function handleLogin(e) {
   e.preventDefault();
   const username = document.getElementById('login-user').value;
@@ -43,7 +74,15 @@ async function handleLogin(e) {
     localStorage.setItem('vr_token', AUTH_TOKEN);
     localStorage.setItem('vr_user', JSON.stringify(CURRENT_USER));
     document.getElementById('login-overlay').classList.add('hidden');
-    document.getElementById('user-info').textContent = `${CURRENT_USER.full_name} (${CURRENT_USER.role})`;
+    const nameEl = document.getElementById('topbar-name');
+    if (nameEl) nameEl.textContent = CURRENT_USER.full_name || 'System User';
+    const avatarEl = document.getElementById('topbar-avatar');
+    if (avatarEl) avatarEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(CURRENT_USER.full_name || 'Admin')}&background=4f46e5&color=fff&rounded=true`;
+    
+    if (document.getElementById('dropdown-name')) document.getElementById('dropdown-name').textContent = CURRENT_USER.full_name || 'System User';
+    if (document.getElementById('dropdown-email')) document.getElementById('dropdown-email').textContent = CURRENT_USER.email || 'admin@vidyaraksha.gov';
+    if (document.getElementById('dropdown-role')) document.getElementById('dropdown-role').textContent = CURRENT_USER.role || 'Administrator';
+    
     loadDashboardData();
   } else {
     // Offline mode fallback
@@ -63,9 +102,26 @@ function handleLogout() {
 
 function enterOfflineMode() {
   document.getElementById('login-overlay').classList.add('hidden');
-  document.getElementById('user-info').textContent = 'Offline Mode';
+  const nameEl = document.getElementById('topbar-name');
+  if (nameEl) nameEl.textContent = 'Offline User';
+  
+  if (document.getElementById('dropdown-name')) document.getElementById('dropdown-name').textContent = 'Offline User';
+  if (document.getElementById('dropdown-email')) document.getElementById('dropdown-email').textContent = 'offline@vidyaraksha.local';
+  if (document.getElementById('dropdown-role')) document.getElementById('dropdown-role').textContent = 'Local Mode';
+  
   loadOfflineData();
 }
+
+function toggleProfileDropdown(e) {
+  e.stopPropagation();
+  const menu = document.getElementById('profile-dropdown');
+  if (menu) menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+}
+
+document.addEventListener('click', () => {
+  const menu = document.getElementById('profile-dropdown');
+  if (menu) menu.style.display = 'none';
+});
 
 // ═══════════════════ NAV ═══════════════════
 const pageTitles = {
@@ -233,13 +289,35 @@ function renderTable(data) {
       <td>₹${Number(s.family_income).toLocaleString()}/mo</td>
       <td><div style="display:flex;align-items:center;gap:7px"><span style="font-family:'DM Mono',monospace;font-size:12px;color:${riskColor(level)};font-weight:500">${pct}%</span><div class="progress-bar"><div class="progress-fill ${fillClass}" style="width:${pct}%"></div></div></div></td>
       <td><span class="risk-pill risk-${level.toLowerCase()}">${level}</span></td>
-      <td><button class="btn btn-outline btn-sm" onclick='loadStudentPredict(${JSON.stringify(s).replace(/'/g,"&#39;")})'>Predict →</button></td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-outline btn-sm" onclick='loadStudentPredict(${JSON.stringify(s).replace(/'/g,"&#39;")})'>Predict →</button>
+          <button class="btn btn-outline btn-sm" style="color:#ef4444;border-color:var(--border);padding:7px;min-width:32px" onclick="deleteStudent(${s.id}, '${s.student_id}')" title="Delete Student">🗑️</button>
+        </div>
+      </td>
     </tr>`;
   }).join('');
 }
 
 function filterStudents(q) { renderTable(studentsCache.filter(s => s.name.toLowerCase().includes(q.toLowerCase()) || s.student_id.includes(q))); }
 function filterByRisk(level) { renderTable(level ? studentsCache.filter(s => s.risk_level === level) : studentsCache); }
+
+async function deleteStudent(id, studentId) {
+  if (!confirm(`Are you sure you want to delete student ${studentId}?`)) return;
+  
+  const res = await api(`/students/${id}`, { method: 'DELETE' });
+  if (res && res.message) {
+    alert('Student deleted successfully');
+    loadDashboardData();
+  } else {
+    // Offline mode update
+    const offIdx = offlineStudents.findIndex(s => s.id === id);
+    if (offIdx > -1) offlineStudents.splice(offIdx, 1);
+    studentsCache = studentsCache.filter(s => s.id !== id);
+    renderTable(studentsCache);
+    loadOfflineData(); // Update all charts and tags using new offline length
+  }
+}
 
 async function submitNewStudent(e) {
   e.preventDefault();
@@ -459,9 +537,29 @@ async function sendSMS() {
     body: JSON.stringify({ phone, message: msg, student_id: 1 })
   });
   
-  document.getElementById('sms-sent-1').style.display='block';
-  document.getElementById('sms-sent-2').style.display='block';
-  alert(result ? 'SMS alert processed!' : 'SMS logged (offline mode)');
+  if (result && result.message) {
+    document.getElementById('sms-sent-1').style.display='block';
+    document.getElementById('sms-sent-2').style.display='block';
+    alert('SMS alert processed via backend!');
+  } else {
+    try {
+      const tbRes = await fetch('https://textbelt.com/text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, message: msg, key: 'textbelt' })
+      });
+      const tbData = await tbRes.json();
+      if (tbData.success) {
+        document.getElementById('sms-sent-1').style.display='block';
+        document.getElementById('sms-sent-2').style.display='block';
+        alert('Real SMS sent via built-in Textbelt integration!');
+      } else {
+        alert('SMS logged locally. Delivery error: ' + tbData.error);
+      }
+    } catch(e) {
+      alert('SMS logged (offline mode)');
+    }
+  }
 }
 
 async function sendCustomAlert() {
@@ -469,8 +567,27 @@ async function sendCustomAlert() {
   const msg = document.getElementById('alert-msg').value;
   if (!phone) { alert('Enter a phone number'); return; }
   
-  await api('/alerts/send-custom', { method:'POST', body: JSON.stringify({ phone, message: msg, student_id: 1 }) });
-  alert(`Alert sent to ${phone}`);
+  const result = await api('/alerts/send-custom', { method:'POST', body: JSON.stringify({ phone, message: msg, student_id: 1 }) });
+  
+  if (result && result.message) {
+    alert(`Alert sent to ${phone}`);
+  } else {
+    try {
+      const tbRes = await fetch('https://textbelt.com/text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, message: msg, key: 'textbelt' })
+      });
+      const tbData = await tbRes.json();
+      if (tbData.success) {
+        alert(`Real SMS sent to ${phone} via built-in Textbelt integration!`);
+      } else {
+        alert('Delivery failed: ' + tbData.error);
+      }
+    } catch(e) {
+      alert(`Alert logged locally for ${phone}`);
+    }
+  }
   document.getElementById('alert-msg').value='';
   document.getElementById('alert-phone').value='';
 }
@@ -646,7 +763,15 @@ function initCharts(high, med, low, schoolData) {
 (function init() {
   if (AUTH_TOKEN && CURRENT_USER) {
     document.getElementById('login-overlay').classList.add('hidden');
-    document.getElementById('user-info').textContent = `${CURRENT_USER.full_name} (${CURRENT_USER.role})`;
+    const nameEl = document.getElementById('topbar-name');
+    if (nameEl) nameEl.textContent = CURRENT_USER.full_name || 'System User';
+    const avatarEl = document.getElementById('topbar-avatar');
+    if (avatarEl) avatarEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(CURRENT_USER.full_name || 'Admin')}&background=4f46e5&color=fff&rounded=true`;
+    
+    if (document.getElementById('dropdown-name')) document.getElementById('dropdown-name').textContent = CURRENT_USER.full_name || 'System User';
+    if (document.getElementById('dropdown-email')) document.getElementById('dropdown-email').textContent = CURRENT_USER.email || 'admin@vidyaraksha.gov';
+    if (document.getElementById('dropdown-role')) document.getElementById('dropdown-role').textContent = CURRENT_USER.role || 'Administrator';
+    
     loadDashboardData();
   } else {
     // Check if API is available

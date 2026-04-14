@@ -14,25 +14,72 @@
 
 <!-- LOGIN OVERLAY -->
 <div class="login-overlay" id="login-overlay">
-  <div class="login-card">
-    <div class="login-logo">VidyaRaksha</div>
-    <div class="login-tagline">AI-Powered Dropout Early Warning</div>
-    <form id="login-form" onsubmit="handleLogin(event)">
-      <div class="form-group"><label class="form-label">Username</label>
-        <input class="form-input" id="login-user" type="text" value="admin" required></div>
-      <div class="form-group"><label class="form-label">Password</label>
-        <input class="form-input" id="login-pass" type="password" value="admin123" required></div>
-      <div class="form-group"><label class="form-label">Role</label>
-        <select class="form-select" id="login-role">
-          <option value="admin">Administrator</option>
-          <option value="teacher">Teacher</option>
-          <option value="gov_officer">Government Officer</option>
-        </select></div>
-      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px" type="submit">🔐 Sign In</button>
-      <div id="login-error" style="color:var(--accent);font-size:12px;margin-top:10px;display:none"></div>
-    </form>
-    <div style="text-align:center;margin-top:16px;font-size:11px;color:var(--muted)">
-      Default: admin / admin123 · teacher / teacher123
+  <div class="login-wrapper">
+    <div class="login-brand">
+      <span class="logo-text">VidyaRaksha</span>
+    </div>
+    <div class="login-card" id="login-view">
+      <div class="login-header">
+        <h1>Sign in</h1>
+        <p>Stay updated with early AI dropout warnings</p>
+      </div>
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="li-form-group">
+          <input class="li-input" id="login-user" type="text" placeholder="Email or phone" value="admin" required>
+        </div>
+        <div class="li-form-group">
+          <input class="li-input" id="login-pass" type="password" placeholder="Password" value="admin123" required>
+        </div>
+        <div class="li-form-group">
+          <select class="li-input" id="login-role">
+            <option value="admin">Administrator</option>
+            <option value="teacher">Teacher</option>
+            <option value="gov_officer">Government Officer</option>
+          </select>
+        </div>
+        <div class="login-forgot">Forgot password?</div>
+        <button class="li-btn" type="submit">Sign in</button>
+        <div id="login-error" style="color:#ffb3b3;font-size:14px;margin-top:12px;text-align:center;display:none"></div>
+      </form>
+      <div class="login-divider"><span>or</span></div>
+      <button class="li-btn-outline" type="button" onclick="document.getElementById('login-view').style.display='none'; document.getElementById('register-view').style.display='block';">New to VidyaRaksha? Join now</button>
+      <div style="text-align:center;margin-top:20px;font-size:13px;color:rgba(255,255,255,0.7)">
+        Default: admin / admin123 · teacher / teacher123
+      </div>
+    </div>
+    </div>
+
+    <!-- REGISTER VIEW -->
+    <div class="login-card" id="register-view" style="display:none;">
+      <div class="login-header">
+        <h1>Create Account</h1>
+        <p>Join VidyaRaksha to protect student futures</p>
+      </div>
+      <form id="register-form" onsubmit="handleRegister(event)">
+        <div class="li-form-group">
+          <input class="li-input" id="reg-name" type="text" placeholder="Full Name" required>
+        </div>
+        <div class="li-form-group">
+          <input class="li-input" id="reg-email" type="email" placeholder="Email Address" required>
+        </div>
+        <div class="li-form-group">
+          <input class="li-input" id="reg-user" type="text" placeholder="Username" required>
+        </div>
+        <div class="li-form-group">
+          <input class="li-input" id="reg-pass" type="password" placeholder="Password" required>
+        </div>
+        <div class="li-form-group" style="margin-bottom: 24px;">
+          <select class="li-input" id="reg-role">
+            <option value="teacher">Teacher</option>
+            <option value="gov_officer">Government Officer</option>
+            <option value="admin">Administrator</option>
+          </select>
+        </div>
+        <button class="li-btn" type="submit">Sign up</button>
+        <div id="reg-error" style="color:#ffb3b3;font-size:14px;margin-top:12px;text-align:center;display:none"></div>
+      </form>
+      <div class="login-divider"><span>or</span></div>
+      <button class="li-btn-outline" type="button" onclick="document.getElementById('register-view').style.display='none'; document.getElementById('login-view').style.display='block';">Already have an account? Sign in</button>
     </div>
   </div>
 </div>
@@ -54,8 +101,7 @@
     <button class="nav-item" onclick="showPage('about')"><span class="icon">ℹ️</span> About</button>
   </div>
   <div class="sidebar-footer">
-    <div id="user-info" style="margin-bottom:6px;font-size:12px;color:rgba(245,242,235,0.6)"></div>
-    <button class="nav-item" onclick="handleLogout()" style="font-size:12px;padding:6px 12px">🚪 Logout</button>
+    <div style="font-weight:600;color:white;margin-bottom:2px">VidyaRaksha v2.0</div>
     Sahyadri College of Engineering<br>IDEATERS Project · 2025
   </div>
 </nav>
@@ -69,9 +115,32 @@
   <div class="topbar">
     <div class="topbar-title" id="page-title">Dashboard Overview</div>
     <div class="topbar-right">
-      <span class="badge badge-red" id="badge-high"><span class="dot dot-red pulse"></span><span id="high-count">0</span> High Risk</span>
+      <span class="badge badge-red" id="badge-high"><span class="dot dot-red pulse"></span><span id="high-count">0</span> High</span>
       <span class="badge badge-yellow"><span class="dot dot-yellow"></span><span id="med-count">0</span> Medium</span>
-      <span class="badge badge-green"><span class="dot dot-green"></span>Model Active</span>
+      <span class="badge badge-green" style="margin-right: 4px;"><span class="dot dot-green"></span>Active</span>
+      <div style="width: 1px; height: 24px; background: var(--border);"></div>
+      <div style="position: relative;">
+        <div style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding-left: 4px; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='none'" onclick="toggleProfileDropdown(event)">
+          <img id="topbar-avatar" src="https://ui-avatars.com/api/?name=Admin&background=4f46e5&color=fff&rounded=true" alt="User" style="width: 36px; height: 36px; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="display: flex; flex-direction: column;">
+            <span id="topbar-name" style="font-size: 13.5px; font-weight: 700; color: var(--ink); line-height: 1.2;">Administrator</span>
+            <span style="font-size: 11.5px; color: var(--muted); line-height: 1.2;">Account ▼</span>
+          </div>
+        </div>
+        
+        <!-- Profile Dropdown -->
+        <div id="profile-dropdown" style="display: none; position: absolute; top: calc(100% + 16px); right: 0; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); width: 220px; z-index: 1000; border: 1px solid var(--border); overflow: hidden; animation: slideUp 0.2s ease;">
+          <div style="padding: 16px; border-bottom: 1px solid var(--border); background: var(--paper);">
+            <div id="dropdown-name" style="font-weight: 700; font-size: 14px; color: var(--ink);">Administrator</div>
+            <div id="dropdown-email" style="font-size: 12px; color: var(--muted); margin-top: 2px;">admin@vidyaraksha.gov</div>
+            <span class="badge badge-green" style="margin-top: 8px; font-size: 11px;" id="dropdown-role">System Admin</span>
+          </div>
+          <div style="padding: 8px 0;">
+            <div style="padding: 10px 16px; font-size: 13.5px; color: var(--ink); cursor: pointer; transition: background 0.2s; display: flex; gap: 8px;" onmouseover="this.style.background='var(--paper2)'" onmouseout="this.style.background='transparent'"><span>⚙️</span> Settings</div>
+            <div style="padding: 10px 16px; font-size: 13.5px; color: var(--accent); cursor: pointer; transition: background 0.2s; font-weight: 600; display: flex; gap: 8px;" onmouseover="this.style.background='var(--red-bg)'" onmouseout="this.style.background='transparent'" onclick="handleLogout()"><span>🚪</span> Sign Out</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
