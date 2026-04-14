@@ -170,13 +170,26 @@
 
   <!-- STUDENTS -->
   <div class="page fade-in" id="page-students">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
-      <div><div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.5px">Student Registry</div>
-        <div style="color:var(--muted);font-size:13px;margin-top:3px" id="student-count-label">Loading students...</div></div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:16px;background:white;padding:24px;border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow)">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;letter-spacing:-0.5px">Student Registry</div>
+        <div style="color:var(--muted);font-size:14px;margin-top:4px" id="student-count-label">Loading students...</div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <div style="text-align:right;margin-right:12px">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">Risk Breakdown</div>
+          <div style="display:flex;gap:4px;margin-top:4px">
+            <span class="badge badge-red" style="padding:2px 8px;font-size:10px" id="registry-high">0 H</span>
+            <span class="badge badge-yellow" style="padding:2px 8px;font-size:10px" id="registry-med">0 M</span>
+            <span class="badge badge-green" style="padding:2px 8px;font-size:10px" id="registry-low">0 L</span>
+          </div>
+        </div>
         <div class="search-wrap"><input class="search-input" type="text" placeholder="Search students..." oninput="filterStudents(this.value)"></div>
-        <select class="form-select" style="width:140px;padding:8px 12px" onchange="filterByRisk(this.value)">
-          <option value="">All Risk Levels</option><option value="High">High Risk</option><option value="Medium">Medium Risk</option><option value="Low">Low Risk</option>
+        <select class="form-select" style="width:160px;padding:10px 14px" onchange="filterByRisk(this.value)">
+          <option value="">All Risk Levels</option>
+          <option value="High">🔴 High Risk</option>
+          <option value="Medium">🟡 Medium Risk</option>
+          <option value="Low">🟢 Low Risk</option>
         </select>
       </div>
     </div>

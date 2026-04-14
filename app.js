@@ -93,7 +93,7 @@ async function handleLogin(e) {
     // Offline mode fallback
     const el = document.getElementById('login-error');
     if (data && data.error) { el.textContent = data.error; el.style.display = 'block'; }
-    else { enterOfflineMode(); }
+    else { enterOfflineMode(true); }
   }
 }
 
@@ -105,8 +105,8 @@ function handleLogout() {
   document.getElementById('login-overlay').classList.remove('hidden');
 }
 
-function enterOfflineMode() {
-  document.getElementById('login-overlay').classList.add('hidden');
+function enterOfflineMode(autoHide = true) {
+  if (autoHide) document.getElementById('login-overlay').classList.add('hidden');
   const nameEl = document.getElementById('topbar-name');
   if (nameEl) nameEl.textContent = 'Offline User';
   
@@ -280,6 +280,15 @@ function loadOfflineData() {
 function renderTable(data) {
   const tbody = document.getElementById('student-tbody');
   document.getElementById('student-count-label').textContent = `${data.length} students · Click Predict to analyze`;
+  
+  const high = data.filter(s => (s.dropout_risk_score >= 65 || s.risk_level === 'High')).length;
+  const med = data.filter(s => (s.dropout_risk_score >= 35 && s.dropout_risk_score < 65) || s.risk_level === 'Medium').length;
+  const low = data.length - high - med;
+  
+  if (document.getElementById('registry-high')) document.getElementById('registry-high').textContent = `${high} High`;
+  if (document.getElementById('registry-med')) document.getElementById('registry-med').textContent = `${med} Medium`;
+  if (document.getElementById('registry-low')) document.getElementById('registry-low').textContent = `${low} Safe`;
+
   tbody.innerHTML = data.map(s => {
     const pct = Math.round(s.dropout_risk_score);
     const level = s.risk_level || riskLevel(pct / 100);
@@ -767,7 +776,6 @@ function initCharts(high, med, low, schoolData) {
 // ═══════════════════ INIT ═══════════════════
 (function init() {
   if (AUTH_TOKEN && CURRENT_USER) {
-    document.getElementById('login-overlay').classList.add('hidden');
     const nameEl = document.getElementById('topbar-name');
     if (nameEl) nameEl.textContent = CURRENT_USER.full_name || 'System User';
     const avatarEl = document.getElementById('topbar-avatar');
@@ -784,7 +792,7 @@ function initCharts(high, med, low, schoolData) {
       // API available, show login
     }).catch(() => {
       // No API, auto-enter offline mode
-      enterOfflineMode();
+      enterOfflineMode(false);
     });
   }
 })();
