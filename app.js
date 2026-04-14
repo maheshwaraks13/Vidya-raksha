@@ -4,9 +4,12 @@
  */
 
 // ═══════════════════ CONFIG ═══════════════════
-const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_BASE = isLocal 
   ? 'http://127.0.0.1:5000/api' 
-  : window.location.origin + '/api';
+  : window.location.pathname.includes('/Vidya-raksha/') 
+    ? window.location.origin + '/Vidya-raksha/api'
+    : window.location.origin + '/api';
 let AUTH_TOKEN = localStorage.getItem('vr_token') || '';
 let CURRENT_USER = JSON.parse(localStorage.getItem('vr_user') || 'null');
 let studentsCache = [];
