@@ -255,54 +255,114 @@
     </div>
   </div>
 
-  <!-- STUDENT PROFILE -->
+  <!-- STUDENT PROFILE (DETAILED) -->
   <div class="page fade-in" id="page-profile">
-    <div style="display:flex; gap:20px; margin-bottom:24px; align-items:flex-end; justify-content:space-between;">
+    <div style="display:flex; gap:20px; margin-bottom:24px; align-items:flex-end; justify-content:space-between; background:white; padding:20px; border-radius:12px; border:1px solid var(--border); box-shadow:var(--shadow);">
        <div style="display:flex; gap:20px; align-items:center;">
-          <button class="btn btn-outline btn-sm" onclick="showPage('students')">← Back</button>
+          <button class="btn btn-outline btn-sm" onclick="showPage('students')">← Back to List</button>
           <div>
-            <h1 id="prof-name" style="font-family:'Syne',sans-serif; margin:0;">Student Name</h1>
-            <div id="prof-id" style="color:var(--muted); font-size:14px;">Student ID: —</div>
+            <h1 id="prof-name" style="font-family:'Syne',sans-serif; margin:0; font-size:28px; letter-spacing:-0.5px">Student Name</h1>
+            <div id="prof-id" style="color:var(--muted); font-size:14px; font-weight:500;"></div>
           </div>
        </div>
        <div style="display:flex; gap:10px;">
-          <button class="btn btn-primary btn-sm" onclick="openInterventionModal()">➕ Record Intervention</button>
-          <button class="btn btn-outline btn-sm" id="prof-predict-btn">🔮 Re-Analyze</button>
+          <button class="btn btn-outline btn-sm" style="color:var(--primary)" onclick="triggerCall()">📞 Call Parent</button>
+          <button class="btn btn-outline btn-sm" style="color:#10b981" onclick="triggerEmail()">✉️ Send Email</button>
+          <button class="btn btn-primary btn-sm" onclick="openInterventionModal()">➕ New Record</button>
        </div>
     </div>
 
-    <div class="two-col" style="grid-template-columns: 1fr 2fr;">
-      <div class="card">
-        <div class="card-header"><div class="card-title">Vitals</div></div>
-        <div class="card-body" id="prof-vitals">
-           <!-- Dynamic vitals go here -->
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header"><div class="card-title">Performance History</div></div>
-        <div class="card-body">
-          <div class="chart-container" style="height:220px"><canvas id="profChart"></canvas></div>
-        </div>
-      </div>
+    <!-- GRID LAYOUT FOR PROFILE -->
+    <div class="three-col">
+       <!-- 1. BASIC INFORMATION -->
+       <div class="card">
+         <div class="card-header"><div class="card-title">Basic Information</div></div>
+         <div class="card-body" id="prof-basic-info">
+            <!-- Dynamic fields -->
+         </div>
+       </div>
+
+       <!-- 2. CONTACT INFORMATION -->
+       <div class="card">
+         <div class="card-header"><div class="card-title">Contact Information</div></div>
+         <div class="card-body" id="prof-contact-info">
+            <!-- Dynamic fields -->
+         </div>
+       </div>
+
+       <!-- 3. RISK ASSESSMENT -->
+       <div class="card" id="prof-risk-card">
+         <div class="card-header"><div class="card-title">Risk Assessment</div></div>
+         <div class="card-body">
+            <div style="text-align:center; padding-bottom:16px; border-bottom:1px solid var(--border); margin-bottom:16px;">
+               <div style="font-size:12px; color:var(--muted); text-transform:uppercase; font-weight:700;">Score</div>
+               <div id="prof-risk-score" style="font-family:'Syne',sans-serif; font-size:42px; font-weight:800; line-height:1;">0%</div>
+               <div id="prof-risk-badge" style="margin-top:8px;"></div>
+            </div>
+            <div style="font-size:13px; font-weight:700; margin-bottom:8px;">Root Causes (AI Analysis):</div>
+            <div id="prof-risk-reasons"></div>
+         </div>
+       </div>
+    </div>
+
+    <div class="two-col" style="grid-template-columns: 2fr 1fr;">
+       <!-- 4. ACADEMIC PERFORMANCE -->
+       <div class="card">
+         <div class="card-header"><div class="card-title">Academic & Participation</div></div>
+         <div class="card-body">
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:20px; margin-bottom:20px;" id="prof-academics">
+               <!-- Subject cards -->
+            </div>
+            <div style="height:180px;"><canvas id="profPerfChart"></canvas></div>
+         </div>
+       </div>
+
+       <!-- 5. ATTENDANCE SNAPSHOT -->
+       <div class="card">
+          <div class="card-header"><div class="card-title">Attendance</div></div>
+          <div class="card-body">
+             <div id="prof-attendance-stats" style="margin-bottom:16px;"></div>
+             <div style="height:150px;"><canvas id="profAttChart"></canvas></div>
+          </div>
+       </div>
     </div>
 
     <div class="two-col">
-      <div class="card">
-        <div class="card-header"><div class="card-title">Risk Insights (AI)</div></div>
-        <div class="card-body">
-          <div id="prof-risk-explanation"></div>
-          <div style="margin-top:20px;">
-            <div style="font-weight:700; font-size:14px; margin-bottom:10px;">AI Recommendations</div>
-            <div id="prof-recommendations"></div>
+       <!-- 6. FAMILY & BACKGROUND -->
+       <div class="card">
+         <div class="card-header"><div class="card-title">Family Background</div></div>
+         <div class="card-body" id="prof-family-info">
+            <!-- Dynamic info -->
+         </div>
+       </div>
+
+       <!-- 7. ALERTS & WARNINGS -->
+       <div class="card" style="border-color:var(--accent);">
+          <div class="card-header" style="background:var(--red-bg);"><div class="card-title" style="color:var(--accent)">System Alerts</div></div>
+          <div class="card-body" id="prof-alerts">
+             <!-- Active alerts -->
           </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header"><div class="card-title">Intervention & Alert History</div></div>
-        <div class="card-body" style="padding:0 22px">
-           <div class="timeline-line" id="prof-timeline"></div>
-        </div>
-      </div>
+       </div>
+    </div>
+
+    <div class="two-col">
+       <!-- 8. INTERVENTION HISTORY -->
+       <div class="card">
+          <div class="card-header"><div class="card-title">Intervention History</div></div>
+          <div class="card-body" style="padding:0; max-height:400px; overflow-y:auto;">
+             <div class="timeline-line" id="prof-interventions" style="padding:20px;"></div>
+          </div>
+       </div>
+
+       <!-- 9. COMMUNICATION LOG -->
+       <div class="card">
+          <div class="card-header"><div class="card-title">Communication Log</div></div>
+          <div class="card-body" style="padding:0; max-height:400px; overflow-y:auto;">
+             <div id="prof-comm-log" style="padding:20px;">
+                <!-- Call/SMS history -->
+             </div>
+          </div>
+       </div>
     </div>
   </div>
 

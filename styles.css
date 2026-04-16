@@ -360,3 +360,22 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   .result-panel > div { grid-template-columns: 1fr !important; }
   .topbar-right { display: none; }
 }
+
+/* STUDENT PROFILE ENHANCEMENTS */
+.vital-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 13.5px; }
+.vital-row:last-child { border-bottom: none; }
+.vital-row span { color: var(--muted); font-weight: 500; }
+.vital-row strong { color: var(--ink); font-weight: 700; }
+
+.three-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 24px; }
+
+.action-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 800; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.3px; }
+.action-alert { background: #fee2e2; color: #b91c1c; }
+.action-visit { background: #e0f2fe; color: #0369a1; }
+.action-system { background: #f1f5f9; color: #475569; }
+
+.recommendation-item { padding: 12px; background: var(--paper); border-radius: 8px; border-left: 4px solid var(--primary); margin-bottom: 12px; font-size: 13px; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+
+.timeline-line { position: relative; border-left: 2px solid var(--border); margin-left: 10px; padding-left: 25px; }
+.alert-item { position: relative; margin-bottom: 24px; }
+.alert-dot { position: absolute; left: -34px; top: 5px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 0 2px var(--border); }

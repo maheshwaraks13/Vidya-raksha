@@ -173,13 +173,26 @@ function toggleSidebar() {
 
 // ═══════════════════ OFFLINE DATA ═══════════════════
 const offlineStudents = [
-  { id:1,student_id:'S001',name:'Priya Sharma',grade:8,section:'A',attendance_percentage:41,exam_scores:35,distance_to_school:9,family_income:6500,parent_education_level:0,health_issues:true,internet_access:false,previous_failures:2,parent_occupation:0,gender:'F',dropout_risk_score:0,risk_level:'Low' },
-  { id:2,student_id:'S002',name:'Rajan Kumar',grade:9,section:'B',attendance_percentage:62,exam_scores:52,distance_to_school:5,family_income:9000,parent_education_level:1,health_issues:false,internet_access:false,previous_failures:1,parent_occupation:1,gender:'M',dropout_risk_score:0,risk_level:'Low' },
-  { id:3,student_id:'S003',name:'Anita Desai',grade:7,section:'A',attendance_percentage:78,exam_scores:68,distance_to_school:3,family_income:14000,parent_education_level:2,health_issues:false,internet_access:true,previous_failures:0,parent_occupation:2,gender:'F',dropout_risk_score:0,risk_level:'Low' },
-  { id:4,student_id:'S004',name:'Mohan Yadav',grade:10,section:'C',attendance_percentage:44,exam_scores:31,distance_to_school:12,family_income:5500,parent_education_level:0,health_issues:true,internet_access:false,previous_failures:3,parent_occupation:0,gender:'M',dropout_risk_score:0,risk_level:'Low' },
-  { id:5,student_id:'S005',name:'Sunita Patel',grade:8,section:'B',attendance_percentage:55,exam_scores:48,distance_to_school:7,family_income:8000,parent_education_level:1,health_issues:false,internet_access:false,previous_failures:1,parent_occupation:1,gender:'F',dropout_risk_score:0,risk_level:'Low' },
-  { id:6,student_id:'S006',name:'Deepak Nair',grade:9,section:'A',attendance_percentage:88,exam_scores:75,distance_to_school:2,family_income:20000,parent_education_level:3,health_issues:false,internet_access:true,previous_failures:0,parent_occupation:3,gender:'M',dropout_risk_score:0,risk_level:'Low' },
-  { id:7,student_id:'S007',name:'Kavya Reddy',grade:7,section:'C',attendance_percentage:38,exam_scores:28,distance_to_school:14,family_income:4500,parent_education_level:0,health_issues:true,internet_access:false,previous_failures:2,parent_occupation:0,gender:'F',dropout_risk_score:0,risk_level:'Low' },
+  { 
+    id:1, student_id:'VRS-2024-001', name:'Priya Sharma', admission_no:'ADM/24/089', grade:8, section:'A', 
+    dob:'2010-05-14', gender:'Female', school_name:'ZP Rural School, Nandur',
+    parent_name:'Rajesh Sharma', father_phone:'+91 9876543210', mother_phone:'+91 9876543211', parent_email:'r.sharma@gmail.com', emergency_contact:'+91 9123456789',
+    address:'House No. 42, Ward 5', village:'Nandur', district:'Pune', pincode:'412210',
+    math_marks:32, science_marks:38, english_marks:35, exam_scores:35, homework_completion:45,
+    total_days:120, days_present:49, days_absent:71, attendance_percentage:41, last_absent_date:'2024-04-12',
+    family_income:6500, parent_occupation:'Daily Labour', siblings:3, first_generation:true, distance_to_school:9, transport_type:'Walking',
+    dropout_risk_score:82, risk_level:'High'
+  },
+  { 
+    id:2, student_id:'VRS-2024-002', name:'Rahul Patil', admission_no:'ADM/24/112', grade:9, section:'B', 
+    dob:'2009-11-20', gender:'Male', school_name:'GP School, Wadgaon',
+    parent_name:'Sunil Patil', father_phone:'+91 9988776655', mother_phone:'+91 9988776656', parent_email:'s.patil@yahoo.com', emergency_contact:'+91 9876543210',
+    address:'Galli No. 2, Station Road', village:'Wadgaon', district:'Pune', pincode:'412215',
+    math_marks:78, science_marks:82, english_marks:75, exam_scores:78, homework_completion:92,
+    total_days:120, days_present:110, days_absent:10, attendance_percentage:92, last_absent_date:'2024-03-05',
+    family_income:25000, parent_occupation:'Shopkeeper', siblings:1, first_generation:false, distance_to_school:2, transport_type:'Bicycle',
+    dropout_risk_score:12, risk_level:'Low'
+  }
 ];
 
 const offlineSchemes = [
@@ -937,58 +950,169 @@ function initCharts(high, med, low, schoolData) {
 // ═══════════════════ STUDENT PROFILE ═══════════════════
 let currentProfileStudent = null;
 
-function viewProfile(s) {
+async function viewProfile(s) {
   currentProfileStudent = s;
   showPage('profile');
   document.getElementById('page-title').textContent = 'Student Profile';
   
+  // Header
   document.getElementById('prof-name').textContent = s.name;
-  document.getElementById('prof-id').textContent = `Student ID: ${s.student_id} · Grade ${s.grade}`;
+  document.getElementById('prof-id').textContent = `ID: ${s.student_id} | Admission: ${s.admission_no || 'N/A'}`;
   
-  const vitals = [
-    { label: 'Attendance', value: `${s.attendance_percentage}%`, color: s.attendance_percentage < 60 ? 'var(--accent)' : 'inherit' },
-    { label: 'Exam Score', value: `${s.exam_scores}/100`, color: s.exam_scores < 50 ? 'var(--accent)' : 'inherit' },
-    { label: 'Risk Level', value: s.risk_level, color: riskColor(s.risk_level) },
-    { label: 'Family Income', value: `₹${Number(s.family_income).toLocaleString()}` },
-    { label: 'Distance to School', value: `${s.distance_to_school} km` },
-    { label: 'Health Issues', value: s.health_issues ? 'Yes' : 'No' }
-  ];
+  // 1. Basic Info
+  document.getElementById('prof-basic-info').innerHTML = `
+    <div class="vital-row"><span>Class/Section</span> <strong>${s.grade} - ${s.section || 'A'}</strong></div>
+    <div class="vital-row"><span>Date of Birth</span> <strong>${s.dob || '—'}</strong></div>
+    <div class="vital-row"><span>Gender</span> <strong>${s.gender || '—'}</strong></div>
+    <div class="vital-row"><span>School</span> <strong>${s.school_name || 'ZP School'}</strong></div>
+  `;
   
-  document.getElementById('prof-vitals').innerHTML = vitals.map(v => `
-    <div class="vital-item">
-      <div class="vital-label">${v.label}</div>
-      <div class="vital-value" style="color:${v.color || 'inherit'}">${v.value}</div>
+  // 2. Contact Info
+  document.getElementById('prof-contact-info').innerHTML = `
+    <div class="vital-row"><span>Parent</span> <strong>${s.parent_name || '—'}</strong></div>
+    <div class="vital-row"><span>Father Phone</span> <strong>${s.father_phone || s.parent_contact || '—'}</strong></div>
+    <div class="vital-row"><span>Mother Phone</span> <strong>${s.mother_phone || '—'}</strong></div>
+    <div class="vital-row"><span>Email</span> <strong>${s.parent_email || '—'}</strong></div>
+    <div class="vital-row"><span>Emergency</span> <strong>${s.emergency_contact || '—'}</strong></div>
+    <div class="vital-row"><span>Address</span> <strong style="font-size:11px">${s.address || '—'}, ${s.village || ''}</strong></div>
+  `;
+  
+  // 3. Risk Assessment
+  const riskColorCode = s.risk_level === 'High' ? 'var(--accent)' : s.risk_level === 'Medium' ? '#b5810a' : 'var(--accent2)';
+  document.getElementById('prof-risk-score').textContent = s.dropout_risk_score + '%';
+  document.getElementById('prof-risk-score').style.color = riskColorCode;
+  document.getElementById('prof-risk-badge').innerHTML = `<span class="badge ${s.risk_level === 'High' ? 'badge-red' : s.risk_level === 'Medium' ? 'badge-yellow' : 'badge-green'}">${s.risk_level} Risk</span>`;
+  
+  let reasons = [];
+  if (s.attendance_percentage < 75) reasons.push('⚠️ Attendance below critical 75%');
+  if (s.exam_scores < 40) reasons.push('📉 Poor academic performance');
+  if (s.family_income < 10000) reasons.push('💰 Low family income (Financial Risk)');
+  if (s.distance_to_school > 5) reasons.push('🚶 Long distance to school');
+  document.getElementById('prof-risk-reasons').innerHTML = reasons.map(r => `<div style="color:var(--muted); margin-bottom:4px; font-size:12.5px">${r}</div>`).join('');
+
+  // 4. Academics
+  document.getElementById('prof-academics').innerHTML = `
+    <div style="background:var(--paper); padding:10px; border-radius:8px; text-align:center;">
+       <div style="font-size:10px; color:var(--muted)">Math</div><div style="font-weight:700">${s.math_marks || '—'}</div>
     </div>
-  `).join('');
-
-  // Risk Explanation
-  const rs = s.dropout_risk_score / 100;
-  const shap = computeOfflineSHAP(s);
-  document.getElementById('prof-risk-explanation').innerHTML = shap.slice(0, 3).map(f => `
-    <div class="shap-bar"><div class="shap-label">${f.display_name}</div>
-      <div class="shap-track"><div class="shap-fill shap-fill-pos" style="width:${Math.round(f.abs_impact*250)}%"></div></div>
+    <div style="background:var(--paper); padding:10px; border-radius:8px; text-align:center;">
+       <div style="font-size:10px; color:var(--muted)">Science</div><div style="font-weight:700">${s.science_marks || '—'}</div>
     </div>
-  `).join('');
+    <div style="background:var(--paper); padding:10px; border-radius:8px; text-align:center;">
+       <div style="font-size:10px; color:var(--muted)">English</div><div style="font-weight:700">${s.english_marks || '—'}</div>
+    </div>
+  `;
+  renderProfPerfChart(s);
 
-  // Recommendations
-  const recs = [];
-  if (s.attendance_percentage < 60) recs.push('Schedule mandatory counseling for student and parents.');
-  if (s.exam_scores < 45) recs.push('Enroll in remedial classes for core subjects.');
-  if (s.family_income < 8000) recs.push('Apply for Pre-Matric Scholarship scheme.');
-  if (recs.length === 0) recs.push('Continue monitoring academic performance.');
+  // 5. Attendance
+  document.getElementById('prof-attendance-stats').innerHTML = `
+    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+       <span style="font-size:12px; color:var(--muted)">Percentage</span><strong style="color:${s.attendance_percentage < 75 ? 'var(--accent)' : 'inherit'}">${s.attendance_percentage}%</strong>
+    </div>
+    <div style="display:flex; justify-content:space-between; font-size:12px;">
+       <span>Present: ${s.days_present || 0}</span> <span>Absent: ${s.days_absent || 0}</span>
+    </div>
+  `;
+  renderProfAttChart(s);
+
+  // 6. Family & Background
+  document.getElementById('prof-family-info').innerHTML = `
+    <div class="vital-row"><span>Income</span> <strong>₹${s.family_income || '—'}/mo</strong></div>
+    <div class="vital-row"><span>Occupation</span> <strong>${s.parent_occupation || '—'}</strong></div>
+    <div class="vital-row"><span>Siblings</span> <strong>${s.siblings || '—'}</strong></div>
+    <div class="vital-row"><span>First Gen</span> <strong>${s.first_generation ? 'Yes' : 'No'}</strong></div>
+    <div class="vital-row"><span>Transport</span> <strong>${s.transport_type || '—'} (${s.distance_to_school}km)</strong></div>
+  `;
+
+  // 7. Alerts
+  let alerts = [];
+  if (s.attendance_percentage < 75) alerts.push('Attendance critical (Under 75%)');
+  if (s.exam_scores < 40) alerts.push('Multiple subjects failing/below-avg');
+  if (s.days_absent > 10) alerts.push('Excessive total absences this term');
+  document.getElementById('prof-alerts').innerHTML = alerts.length ? alerts.map(a => `<div style="background:var(--red-bg); color:var(--accent); padding:10px; border-radius:8px; margin-bottom:8px; font-size:12px; font-weight:600;">🔔 ${a}</div>`).join('') : '<div style="color:var(--muted); font-size:12px">No active alerts.</div>';
+
+  // 8. Interventions
+  renderInterventionsOnProfile(s.id);
   
-  document.getElementById('prof-recommendations').innerHTML = recs.map(r => `
-    <div class="recommendation-item">${r}</div>
-  `).join('');
+  // 9. Comm Log
+  document.getElementById('prof-comm-log').innerHTML = `
+    <div style="font-size:12px; color:var(--muted); margin-bottom:12px;">Recent Communications</div>
+    <div style="background:var(--paper); padding:10px; border-radius:8px; margin-bottom:8px;">
+       <div style="font-weight:700; font-size:12px;">SMS Sent</div>
+       <div style="font-size:11px; color:var(--muted)">2 days ago - Attendance Alert</div>
+    </div>
+    <div style="background:var(--paper); padding:10px; border-radius:8px; margin-bottom:8px;">
+       <div style="font-weight:700; font-size:12px;">Auto-Email</div>
+       <div style="font-size:11px; color:var(--muted)">1 week ago - Monthly Report</div>
+    </div>
+  `;
+}
 
-  // History / Timeline (Simulated)
+function triggerCall() {
+  alert("Initiating secure call to parent via school VoIP gateway...");
+  // Simulate log entry
+  const log = document.getElementById('prof-comm-log');
+  log.innerHTML = `<div style="background:var(--paper); padding:10px; border-radius:8px; margin-bottom:8px; border-left:3px solid var(--primary)">
+       <div style="font-weight:700; font-size:12px;">Phone Call Made</div>
+       <div style="font-size:11px; color:var(--muted)">Just now - Routine Checkup</div>
+    </div>` + (log.innerHTML || '');
+}
+
+function triggerEmail() {
+  const msg = prompt("Enter email message:");
+  if (msg) alert("Email sent to parent successfully.");
+}
+
+function renderProfPerfChart(s) {
+  const ctx = document.getElementById('profPerfChart').getContext('2d');
+  if (charts.profPerf) charts.profPerf.destroy();
+  charts.profPerf = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: ['Math', 'Science', 'English', 'Attendance', 'Homework'],
+      datasets: [{
+        label: 'Current Performance',
+        data: [s.math_marks || 0, s.science_marks || 0, s.english_marks || 0, s.attendance_percentage, s.homework_completion || 60],
+        backgroundColor: 'rgba(79, 70, 229, 0.2)',
+        borderColor: 'rgb(79, 70, 229)',
+        pointBackgroundColor: 'rgb(79, 70, 229)'
+      }]
+    },
+    options: {
+      scales: { r: { min: 0, max: 100, ticks: { display: false } } },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+function renderProfAttChart(s) {
+  const ctx = document.getElementById('profAttChart').getContext('2d');
+  if (charts.profAtt) charts.profAtt.destroy();
+  charts.profAtt = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+      datasets: [{
+        data: [1, 1, 0, 1, 0].map(v => v * (Math.random() > 0.3 ? 1 : 0)),
+        backgroundColor: 'var(--primary)',
+        borderRadius: 4
+      }]
+    },
+    options: {
+      scales: { y: { display: false }, x: { grid: { display: false } } },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+function renderInterventionsOnProfile(studentId) {
   const timeline = [
-    { type: 'Alert', title: 'High Risk Warning Triggered', date: '2 days ago', outcome: 'Automatic SMS sent to parent/teacher.' },
+    { type: 'Alert', title: 'High Risk Warning Triggered', date: '2 days ago', outcome: 'Automatic SMS sent to parent.' },
     { type: 'Intervention', title: 'Counseling Session', date: '1 week ago', outcome: 'Student discussed transport issues.' },
     { type: 'System', title: 'Record Created', date: '3 weeks ago', outcome: 'Initial data entry from registry.' }
   ];
   
-  document.getElementById('prof-timeline').innerHTML = timeline.map(t => `
+  document.getElementById('prof-interventions').innerHTML = timeline.map(t => `
     <div class="alert-item">
       <div class="alert-dot" style="background:${t.type==='Alert'?'var(--accent)':t.type==='Intervention'?'var(--primary)':'var(--muted)'}"></div>
       <div>
@@ -999,27 +1123,6 @@ function viewProfile(s) {
       </div>
     </div>
   `).join('');
-
-  document.getElementById('prof-predict-btn').onclick = () => loadStudentPredict(s);
-  
-  initProfileChart(s);
-}
-
-function initProfileChart(s) {
-  const ctx = document.getElementById('profChart');
-  if (charts.prof) charts.prof.destroy();
-  
-  charts.prof = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: ['Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'],
-      datasets: [
-        { label: 'Attendance', data: [75, 72, 65, 58, 52, s.attendance_percentage], borderColor: 'var(--primary)', tension: 0.3 },
-        { label: 'Scores', data: [68, 65, 60, 55, 48, s.exam_scores], borderColor: 'var(--accent)', tension: 0.3 }
-      ]
-    },
-    options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } } }
-  });
 }
 
 // ═══════════════════ INTERVENTIONS ═══════════════════
