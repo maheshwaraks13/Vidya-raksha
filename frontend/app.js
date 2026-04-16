@@ -10,6 +10,12 @@ let CURRENT_USER = JSON.parse(localStorage.getItem('vr_user') || 'null');
 let studentsCache = [];
 let schemesCache = [];
 
+const demoUsers = [
+  { username: 'admin', password: 'admin123', full_name: 'System Administrator', email: 'admin@vidyaraksha.gov', role: 'Administrator' },
+  { username: 'teacher', password: 'teacher123', full_name: 'Rajesh Kumar', email: 'rkumar@school.edu.in', role: 'Senior Teacher' },
+  { username: 'officer', password: 'officer123', full_name: 'Suhani Verma', email: 'sverma@deo.gov.in', role: 'Education Officer' }
+];
+
 // ═══════════════════ API HELPER ═══════════════════
 async function api(endpoint, options = {}) {
   const headers = { 'Content-Type': 'application/json' };
@@ -21,7 +27,7 @@ async function api(endpoint, options = {}) {
     if (res.status === 401) { handleLogout(); return null; }
     return data;
   } catch (e) {
-    console.warn('API unavailable, using offline mode:', e.message);
+    console.warn('API unavailable, will check local demo users');
     return null;
   }
 }
@@ -50,14 +56,15 @@ async function handleRegister(e) {
     document.getElementById('login-user').value = username;
     document.getElementById('login-pass').value = password;
   } else {
-    if (data && data.error) {
-      el.textContent = data.error;
-    } else {
-      el.textContent = 'Network error or backend is offline. Registration failed.';
-    }
-    el.style.display = 'block';
+    // Local registration simulation
+    alert('Backend offline. Demo account created locally for this session.');
+    demoUsers.push({ username, password, full_name, email, role });
+    document.getElementById('register-view').style.display = 'none';
+    document.getElementById('login-view').style.display = 'block';
+    document.getElementById('login-user').value = username;
   }
 }
+
 async function handleLogin(e) {
   e.preventDefault();
   const username = document.getElementById('login-user').value;
@@ -69,27 +76,42 @@ async function handleLogin(e) {
   });
   
   if (data && data.access_token) {
-    AUTH_TOKEN = data.access_token;
-    CURRENT_USER = data.user;
-    localStorage.setItem('vr_token', AUTH_TOKEN);
-    localStorage.setItem('vr_user', JSON.stringify(CURRENT_USER));
-    document.getElementById('login-overlay').classList.add('hidden');
-    const nameEl = document.getElementById('topbar-name');
-    if (nameEl) nameEl.textContent = CURRENT_USER.full_name || 'System User';
-    const avatarEl = document.getElementById('topbar-avatar');
-    if (avatarEl) avatarEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(CURRENT_USER.full_name || 'Admin')}&background=4f46e5&color=fff&rounded=true`;
-    
-    if (document.getElementById('dropdown-name')) document.getElementById('dropdown-name').textContent = CURRENT_USER.full_name || 'System User';
-    if (document.getElementById('dropdown-email')) document.getElementById('dropdown-email').textContent = CURRENT_USER.email || 'admin@vidyaraksha.gov';
-    if (document.getElementById('dropdown-role')) document.getElementById('dropdown-role').textContent = CURRENT_USER.role || 'Administrator';
-    
-    loadDashboardData();
+    loginSuccess(data.access_token, data.user);
   } else {
-    // Offline mode fallback
-    const el = document.getElementById('login-error');
-    if (data && data.error) { el.textContent = data.error; el.style.display = 'block'; }
-    else { enterOfflineMode(); }
+    // Check demo users
+    const user = demoUsers.find(u => u.username === username && u.password === password);
+    if (user) {
+      console.info('Logging in via Simulation Mode');
+      loginSuccess('simulated-jwt-token', user, true);
+    } else {
+      const el = document.getElementById('login-error');
+      el.textContent = 'Invalid credentials. Try admin / admin123';
+      el.style.display = 'block';
+    }
   }
+}
+
+function loginSuccess(token, user, isSimulated = false) {
+  AUTH_TOKEN = token;
+  CURRENT_USER = user;
+  localStorage.setItem('vr_token', AUTH_TOKEN);
+  localStorage.setItem('vr_user', JSON.stringify(CURRENT_USER));
+  
+  document.getElementById('login-overlay').classList.add('hidden');
+  const nameEl = document.getElementById('topbar-name');
+  if (nameEl) nameEl.textContent = CURRENT_USER.full_name;
+  
+  const avatarEl = document.getElementById('topbar-avatar');
+  if (avatarEl) avatarEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(CURRENT_USER.full_name)}&background=4f46e5&color=fff&rounded=true`;
+  
+  if (document.getElementById('dropdown-name')) document.getElementById('dropdown-name').textContent = CURRENT_USER.full_name;
+  if (document.getElementById('dropdown-email')) document.getElementById('dropdown-email').textContent = CURRENT_USER.email;
+  if (document.getElementById('dropdown-role')) {
+    document.getElementById('dropdown-role').textContent = isSimulated ? `${CURRENT_USER.role} (Simulation)` : CURRENT_USER.role;
+    document.getElementById('dropdown-role').className = isSimulated ? 'badge badge-yellow' : 'badge badge-green';
+  }
+  
+  loadDashboardData();
 }
 
 function handleLogout() {
@@ -101,15 +123,8 @@ function handleLogout() {
 }
 
 function enterOfflineMode() {
-  document.getElementById('login-overlay').classList.add('hidden');
-  const nameEl = document.getElementById('topbar-name');
-  if (nameEl) nameEl.textContent = 'Offline User';
-  
-  if (document.getElementById('dropdown-name')) document.getElementById('dropdown-name').textContent = 'Offline User';
-  if (document.getElementById('dropdown-email')) document.getElementById('dropdown-email').textContent = 'offline@vidyaraksha.local';
-  if (document.getElementById('dropdown-role')) document.getElementById('dropdown-role').textContent = 'Local Mode';
-  
-  loadOfflineData();
+  // This is now handled by handleLogin, but kept for auto-login logic
+  handleLogout();
 }
 
 function toggleProfileDropdown(e) {
