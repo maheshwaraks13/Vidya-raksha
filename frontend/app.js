@@ -152,7 +152,8 @@ document.addEventListener('click', () => {
 // ═══════════════════ NAV ═══════════════════
 const pageTitles = {
   dashboard:'Dashboard Overview', students:'Student Registry', predict:'Predict Dropout Risk',
-  alerts:'SMS Alert Log', schemes:'Government Schemes', upload:'Upload Data', 'add-student':'Add New Student', about:'About This Project'
+  alerts:'SMS Alert Log', schemes:'Government Schemes', upload:'Upload Data', 'add-student':'Add New Student', 
+  about:'About This Project', profile:'Student Profile'
 };
 
 function showPage(id) {
@@ -317,6 +318,7 @@ function renderTable(data) {
       <td><span class="risk-pill risk-${level.toLowerCase()}">${level}</span></td>
       <td>
         <div style="display:flex;gap:6px">
+          <button class="btn btn-outline btn-sm" onclick='viewProfile(${JSON.stringify(s).replace(/'/g,"&#39;")})'>Profile</button>
           <button class="btn btn-outline btn-sm" onclick='loadStudentPredict(${JSON.stringify(s).replace(/'/g,"&#39;")})'>Predict →</button>
           <button class="btn btn-outline btn-sm" style="color:#ef4444;border-color:var(--border);padding:7px;min-width:32px" onclick="deleteStudent(${s.id}, '${s.student_id}')" title="Delete Student">🗑️</button>
         </div>
@@ -809,3 +811,133 @@ function initCharts(high, med, low, schoolData) {
     });
   }
 })();
+// ═══════════════════ STUDENT PROFILE ═══════════════════
+let currentProfileStudent = null;
+
+function viewProfile(s) {
+  currentProfileStudent = s;
+  showPage('profile');
+  document.getElementById('page-title').textContent = 'Student Profile';
+  
+  document.getElementById('prof-name').textContent = s.name;
+  document.getElementById('prof-id').textContent = `Student ID: ${s.student_id} · Grade ${s.grade}`;
+  
+  const vitals = [
+    { label: 'Attendance', value: `${s.attendance_percentage}%`, color: s.attendance_percentage < 60 ? 'var(--accent)' : 'inherit' },
+    { label: 'Exam Score', value: `${s.exam_scores}/100`, color: s.exam_scores < 50 ? 'var(--accent)' : 'inherit' },
+    { label: 'Risk Level', value: s.risk_level, color: riskColor(s.risk_level) },
+    { label: 'Family Income', value: `₹${Number(s.family_income).toLocaleString()}` },
+    { label: 'Distance to School', value: `${s.distance_to_school} km` },
+    { label: 'Health Issues', value: s.health_issues ? 'Yes' : 'No' }
+  ];
+  
+  document.getElementById('prof-vitals').innerHTML = vitals.map(v => `
+    <div class="vital-item">
+      <div class="vital-label">${v.label}</div>
+      <div class="vital-value" style="color:${v.color || 'inherit'}">${v.value}</div>
+    </div>
+  `).join('');
+
+  // Risk Explanation
+  const rs = s.dropout_risk_score / 100;
+  const shap = computeOfflineSHAP(s);
+  document.getElementById('prof-risk-explanation').innerHTML = shap.slice(0, 3).map(f => `
+    <div class="shap-bar"><div class="shap-label">${f.display_name}</div>
+      <div class="shap-track"><div class="shap-fill shap-fill-pos" style="width:${Math.round(f.abs_impact*250)}%"></div></div>
+    </div>
+  `).join('');
+
+  // Recommendations
+  const recs = [];
+  if (s.attendance_percentage < 60) recs.push('Schedule mandatory counseling for student and parents.');
+  if (s.exam_scores < 45) recs.push('Enroll in remedial classes for core subjects.');
+  if (s.family_income < 8000) recs.push('Apply for Pre-Matric Scholarship scheme.');
+  if (recs.length === 0) recs.push('Continue monitoring academic performance.');
+  
+  document.getElementById('prof-recommendations').innerHTML = recs.map(r => `
+    <div class="recommendation-item">${r}</div>
+  `).join('');
+
+  // History / Timeline (Simulated)
+  const timeline = [
+    { type: 'Alert', title: 'High Risk Warning Triggered', date: '2 days ago', outcome: 'Automatic SMS sent to parent/teacher.' },
+    { type: 'Intervention', title: 'Counseling Session', date: '1 week ago', outcome: 'Student discussed transport issues.' },
+    { type: 'System', title: 'Record Created', date: '3 weeks ago', outcome: 'Initial data entry from registry.' }
+  ];
+  
+  document.getElementById('prof-timeline').innerHTML = timeline.map(t => `
+    <div class="alert-item">
+      <div class="alert-dot" style="background:${t.type==='Alert'?'var(--accent)':t.type==='Intervention'?'var(--primary)':'var(--muted)'}"></div>
+      <div>
+        <div class="action-badge action-${t.type.toLowerCase() === 'intervention' ? 'visit' : t.type.toLowerCase()}">${t.type}</div>
+        <div style="font-weight:700; font-size:14px;">${t.title}</div>
+        <div style="font-size:12px; color:var(--muted); margin-bottom:4px;">${t.date}</div>
+        <div style="font-size:13px;">${t.outcome}</div>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('prof-predict-btn').onclick = () => loadStudentPredict(s);
+  
+  initProfileChart(s);
+}
+
+function initProfileChart(s) {
+  const ctx = document.getElementById('profChart');
+  if (charts.prof) charts.prof.destroy();
+  
+  charts.prof = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ['Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'],
+      datasets: [
+        { label: 'Attendance', data: [75, 72, 65, 58, 52, s.attendance_percentage], borderColor: 'var(--primary)', tension: 0.3 },
+        { label: 'Scores', data: [68, 65, 60, 55, 48, s.exam_scores], borderColor: 'var(--accent)', tension: 0.3 }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } } }
+  });
+}
+
+// ═══════════════════ INTERVENTIONS ═══════════════════
+function openInterventionModal() {
+  document.getElementById('intervention-modal').classList.add('open');
+}
+function closeInterventionModal() {
+  document.getElementById('intervention-modal').classList.remove('open');
+}
+function submitIntervention() {
+  const type = document.getElementById('int-type').value;
+  const notes = document.getElementById('int-notes').value;
+  if (!notes) return alert('Enter notes');
+  
+  const item = document.createElement('div');
+  item.className = 'alert-item';
+  item.innerHTML = `
+    <div class="alert-dot" style="background:var(--primary)"></div>
+    <div>
+      <div class="action-badge action-visit">Intervention</div>
+      <div style="font-weight:700; font-size:14px;">${type}</div>
+      <div style="font-size:12px; color:var(--muted); margin-bottom:4px;">Just Now</div>
+      <div style="font-size:13px;">${notes}</div>
+    </div>
+  `;
+  document.getElementById('prof-timeline').prepend(item);
+  closeInterventionModal();
+  document.getElementById('int-notes').value = '';
+}
+
+// ═══════════════════ NOTIFICATIONS ═══════════════════
+function toggleNotifs() {
+  document.getElementById('notif-center').classList.toggle('open');
+}
+function exportReport(format) {
+  alert(`Generating dropout risk report in ${format} format...\nThis will include school-wide statistics and high-risk lists.`);
+}
+
+// Close notifs on click away
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.notif-center')) {
+    document.getElementById('notif-center').classList.remove('open');
+  }
+});

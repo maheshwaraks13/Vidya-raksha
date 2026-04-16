@@ -115,9 +115,25 @@
   <div class="topbar">
     <div class="topbar-title" id="page-title">Dashboard Overview</div>
     <div class="topbar-right">
+      <!-- NOTIFICATION CENTER -->
+      <div class="notif-center" id="notif-center">
+        <div class="notif-icon" onclick="toggleNotifs()">
+          🔔<span class="notif-badge" id="notif-count">3</span>
+        </div>
+        <div class="notif-dropdown" id="notif-dropdown">
+          <div class="notif-header">Notifications</div>
+          <div id="notif-list">
+            <div class="notif-item"><strong>Critical:</strong> Priya Sharma's attendance dropped to 38%</div>
+            <div class="notif-item"><strong>Warning:</strong> 5 new students marked as 'High Risk'</div>
+            <div class="notif-item"><strong>System:</strong> Database backup successful</div>
+          </div>
+        </div>
+      </div>
+
       <span class="badge badge-red" id="badge-high"><span class="dot dot-red pulse"></span><span id="high-count">0</span> High</span>
       <span class="badge badge-yellow"><span class="dot dot-yellow"></span><span id="med-count">0</span> Medium</span>
-      <span class="badge badge-green" style="margin-right: 4px;"><span class="dot dot-green"></span>Active</span>
+      <span class="badge badge-green" id="status-badge" style="margin-right: 4px;"><span class="dot dot-green"></span>Active</span>
+      
       <div style="width: 1px; height: 24px; background: var(--border);"></div>
       <div style="position: relative;">
         <div style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding-left: 4px; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='none'" onclick="toggleProfileDropdown(event)">
@@ -146,6 +162,10 @@
 
   <!-- DASHBOARD -->
   <div class="page active fade-in" id="page-dashboard">
+    <div style="display:flex; justify-content:flex-end; gap:10px; margin-bottom:16px;">
+      <button class="btn btn-outline btn-sm" onclick="exportReport('PDF')">📄 Export PDF Report</button>
+      <button class="btn btn-outline btn-sm" onclick="exportReport('CSV')">📊 Export CSV Data</button>
+    </div>
     <div class="stat-grid">
       <div class="stat-card red"><div class="stat-label">High Risk Students</div><div class="stat-value" id="stat-high" style="color:var(--accent)">—</div><div class="stat-sub" id="stat-high-sub">Loading...</div></div>
       <div class="stat-card yellow"><div class="stat-label">Medium Risk</div><div class="stat-value" id="stat-med" style="color:#b5810a">—</div><div class="stat-sub">Intervention needed</div></div>
@@ -174,15 +194,97 @@
       <div><div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.5px">Student Registry</div>
         <div style="color:var(--muted);font-size:13px;margin-top:3px" id="student-count-label">Loading students...</div></div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <div class="search-wrap"><input class="search-input" type="text" placeholder="Search students..." oninput="filterStudents(this.value)"></div>
+        <div class="search-wrap"><input class="search-input" type="text" placeholder="Search name or ID..." oninput="filterStudents(this.value)"></div>
         <select class="form-select" style="width:140px;padding:8px 12px" onchange="filterByRisk(this.value)">
           <option value="">All Risk Levels</option><option value="High">High Risk</option><option value="Medium">Medium Risk</option><option value="Low">Low Risk</option>
         </select>
+        <button class="btn btn-primary btn-sm" onclick="showPage('add-student')">+ Add</button>
       </div>
     </div>
     <div class="card"><div class="table-wrap"><table id="student-table"><thead><tr>
-      <th>Student</th><th>Grade</th><th>Attendance</th><th>Exam Score</th><th>Distance</th><th>Family Income</th><th>Risk Score</th><th>Risk Level</th><th>Action</th>
+      <th>Student</th><th>Grade</th><th>Attendance</th><th>Score</th><th>Distance</th><th>Income</th><th>Risk Score</th><th>Risk Level</th><th>Action</th>
     </tr></thead><tbody id="student-tbody"></tbody></table></div></div>
+  </div>
+
+  <!-- STUDENT PROFILE -->
+  <div class="page fade-in" id="page-profile">
+    <div style="display:flex; gap:20px; margin-bottom:24px; align-items:flex-end; justify-content:space-between;">
+       <div style="display:flex; gap:20px; align-items:center;">
+          <button class="btn btn-outline btn-sm" onclick="showPage('students')">← Back</button>
+          <div>
+            <h1 id="prof-name" style="font-family:'Syne',sans-serif; margin:0;">Student Name</h1>
+            <div id="prof-id" style="color:var(--muted); font-size:14px;">Student ID: —</div>
+          </div>
+       </div>
+       <div style="display:flex; gap:10px;">
+          <button class="btn btn-primary btn-sm" onclick="openInterventionModal()">➕ Record Intervention</button>
+          <button class="btn btn-outline btn-sm" id="prof-predict-btn">🔮 Re-Analyze</button>
+       </div>
+    </div>
+
+    <div class="two-col" style="grid-template-columns: 1fr 2fr;">
+      <div class="card">
+        <div class="card-header"><div class="card-title">Vitals</div></div>
+        <div class="card-body" id="prof-vitals">
+           <!-- Dynamic vitals go here -->
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Performance History</div></div>
+        <div class="card-body">
+          <div class="chart-container" style="height:220px"><canvas id="profChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header"><div class="card-title">Risk Insights (AI)</div></div>
+        <div class="card-body">
+          <div id="prof-risk-explanation"></div>
+          <div style="margin-top:20px;">
+            <div style="font-weight:700; font-size:14px; margin-bottom:10px;">AI Recommendations</div>
+            <div id="prof-recommendations"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Intervention & Alert History</div></div>
+        <div class="card-body" style="padding:0 22px">
+           <div class="timeline-line" id="prof-timeline"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INTERVENTION MODAL -->
+  <div class="modal-overlay" id="intervention-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">Record New Intervention</div>
+        <button class="modal-close" onclick="closeInterventionModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Action Type</label>
+          <select class="form-select" id="int-type">
+            <option>Counseling Session</option>
+            <option>Parent-Teacher Meeting</option>
+            <option>Financial Support Referral</option>
+            <option>Home Visit</option>
+            <option>Mentorship Program</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes / Outcome</label>
+          <textarea class="form-input" rows="4" id="int-notes" placeholder="e.g. Discussed low attendance, parent cited lack of transport..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeInterventionModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitIntervention()">💾 Save Intervention</button>
+      </div>
+    </div>
   </div>
 
   <!-- PREDICT -->
