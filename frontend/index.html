@@ -98,6 +98,7 @@
     <button class="nav-item" onclick="showPage('schemes')"><span class="icon">📋</span> Gov. Schemes</button>
     <button class="nav-item" onclick="showPage('upload')"><span class="icon">📤</span> Upload CSV</button>
     <button class="nav-item" onclick="showPage('add-student')"><span class="icon">➕</span> Add Student</button>
+    <button class="nav-item" onclick="showPage('admin')"><span class="icon">🛡️</span> Admin Panel</button>
     <button class="nav-item" onclick="showPage('about')"><span class="icon">ℹ️</span> About</button>
   </div>
   <div class="sidebar-footer">
@@ -204,6 +205,33 @@
     <div class="card"><div class="table-wrap"><table id="student-table"><thead><tr>
       <th>Student</th><th>Grade</th><th>Attendance</th><th>Score</th><th>Distance</th><th>Income</th><th>Risk Score</th><th>Risk Level</th><th>Action</th>
     </tr></thead><tbody id="student-tbody"></tbody></table></div></div>
+  </div>
+
+  <!-- EDIT STUDENT MODAL -->
+  <div class="modal-overlay" id="edit-student-modal">
+    <div class="modal-content" style="max-width: 800px;">
+      <div class="modal-header">
+        <div class="modal-title">Edit Student Profile</div>
+        <button class="modal-close" onclick="closeEditModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <form id="edit-student-form">
+          <input type="hidden" id="edit-id">
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">Student Name</label><input class="form-input" id="edit-name" type="text" required></div>
+            <div class="form-group"><label class="form-label">Grade</label><input class="form-input" id="edit-grade" type="number" required></div>
+            <div class="form-group"><label class="form-label">Attendance %</label><input class="form-input" id="edit-att" type="number" required></div>
+            <div class="form-group"><label class="form-label">Exam Score</label><input class="form-input" id="edit-score" type="number" required></div>
+            <div class="form-group"><label class="form-label">Distance (km)</label><input class="form-input" id="edit-dist" type="number" required></div>
+            <div class="form-group"><label class="form-label">Income (₹)</label><input class="form-input" id="edit-inc" type="number" required></div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeEditModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitEditStudent()">💾 Update Record</button>
+      </div>
+    </div>
   </div>
 
   <!-- STUDENT PROFILE -->
@@ -422,6 +450,40 @@ Priya Sharma,13,F,7,72,65,3,12000,2,0,1,0</pre></div>
           <button class="btn btn-primary" type="submit" style="margin-top:20px">💾 Save Student</button>
         </form>
       </div>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div class="page fade-in" id="page-admin">
+    <div style="margin-bottom:24px">
+      <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800">Admin Control Panel</div>
+      <div style="color:var(--muted);font-size:13px;margin-top:3px">Manage users, schools, and monitor system health</div>
+    </div>
+    
+    <div class="two-col">
+       <div class="card">
+         <div class="card-header"><div class="card-title">Manage Teachers</div><button class="btn btn-primary btn-sm" onclick="addTeacherSim()">+ Add Teacher</button></div>
+         <div class="card-body">
+           <table id="teacher-table">
+             <thead><tr><th>Name</th><th>Email</th><th>School</th><th>Status</th></tr></thead>
+             <tbody id="teacher-tbody">
+                <tr><td>Rajesh Kumar</td><td>rkumar@school.edu.in</td><td>ZP Nandur</td><td><span class="badge badge-green">Active</span></td></tr>
+                <tr><td>Suhani Verma</td><td>sverma@deo.gov.in</td><td>Govt Wadgaon</td><td><span class="badge badge-green">Active</span></td></tr>
+             </tbody>
+           </table>
+         </div>
+       </div>
+       <div class="card">
+         <div class="card-header"><div class="card-title">System Logs</div></div>
+         <div class="card-body">
+           <div id="sys-logs" style="font-family: 'DM Mono', monospace; font-size: 11px; max-height: 300px; overflow-y: auto; background: #1e293b; color: #94a3b8; padding: 16px; border-radius: 8px;">
+              <div>[2024-04-16 07:12:04] INFO: Database backup successful.</div>
+              <div>[2024-04-16 07:15:33] WARN: High risk identified for S007.</div>
+              <div>[2024-04-16 07:18:21] INFO: SMS Gateway ping successful (0.5ms).</div>
+              <div>[2024-04-16 07:22:11] INFO: User 'admin' logged in from 192.168.1.1.</div>
+           </div>
+         </div>
+       </div>
     </div>
   </div>
 

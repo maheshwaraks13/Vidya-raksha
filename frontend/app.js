@@ -153,7 +153,7 @@ document.addEventListener('click', () => {
 const pageTitles = {
   dashboard:'Dashboard Overview', students:'Student Registry', predict:'Predict Dropout Risk',
   alerts:'SMS Alert Log', schemes:'Government Schemes', upload:'Upload Data', 'add-student':'Add New Student', 
-  about:'About This Project', profile:'Student Profile'
+  about:'About This Project', profile:'Student Profile', admin: 'Admin Control Panel'
 };
 
 function showPage(id) {
@@ -319,6 +319,7 @@ function renderTable(data) {
       <td>
         <div style="display:flex;gap:6px">
           <button class="btn btn-outline btn-sm" onclick='viewProfile(${JSON.stringify(s).replace(/'/g,"&#39;")})'>Profile</button>
+          <button class="btn btn-outline btn-sm" onclick='openEditModal(${JSON.stringify(s).replace(/'/g,"&#39;")})' title="Edit Student">✏️</button>
           <button class="btn btn-outline btn-sm" onclick='loadStudentPredict(${JSON.stringify(s).replace(/'/g,"&#39;")})'>Predict →</button>
           <button class="btn btn-outline btn-sm" style="color:#ef4444;border-color:var(--border);padding:7px;min-width:32px" onclick="deleteStudent(${s.id}, '${s.student_id}')" title="Delete Student">🗑️</button>
         </div>
@@ -931,13 +932,82 @@ function submitIntervention() {
 function toggleNotifs() {
   document.getElementById('notif-center').classList.toggle('open');
 }
+function openEditModal(s) {
+  document.getElementById('edit-id').value = s.id || s.student_id;
+  document.getElementById('edit-name').value = s.name;
+  document.getElementById('edit-grade').value = s.grade;
+  document.getElementById('edit-att').value = s.attendance_percentage;
+  document.getElementById('edit-score').value = s.exam_scores;
+  document.getElementById('edit-dist').value = s.distance_to_school;
+  document.getElementById('edit-inc').value = s.family_income;
+  document.getElementById('edit-student-modal').classList.add('open');
+}
+
+function closeEditModal() {
+  document.getElementById('edit-student-modal').classList.remove('open');
+}
+
+async function submitEditStudent() {
+  const id = document.getElementById('edit-id').value;
+  const updatedData = {
+    name: document.getElementById('edit-name').value,
+    grade: +document.getElementById('edit-grade').value,
+    attendance_percentage: +document.getElementById('edit-att').value,
+    exam_scores: +document.getElementById('edit-score').value,
+    distance_to_school: +document.getElementById('edit-dist').value,
+    family_income: +document.getElementById('edit-inc').value
+  };
+
+  const res = await api(`/students/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(updatedData)
+  });
+
+  if (res && res.student) {
+    alert('Student updated successfully!');
+    loadDashboardData();
+  } else {
+    // Offline update
+    const idx = studentsCache.findIndex(s => (s.id == id || s.student_id == id));
+    if (idx > -1) {
+      const original = studentsCache[idx];
+      const merged = { ...original, ...updatedData };
+      const rs = computeRisk(merged);
+      merged.dropout_risk_score = Math.round(rs * 100);
+      merged.risk_level = riskLevel(rs);
+      studentsCache[idx] = merged;
+      renderTable(studentsCache);
+      alert('Student updated locally (Simulation Mode)');
+    }
+  }
+  closeEditModal();
+}
+
 function exportReport(format) {
   alert(`Generating dropout risk report in ${format} format...\nThis will include school-wide statistics and high-risk lists.`);
 }
 
-// Close notifs on click away
+function addTeacherSim() {
+  const name = prompt("Enter Teacher Name:");
+  if (!name) return;
+  const email = name.toLowerCase().replace(' ', '.') + '@school.edu.in';
+  const tbody = document.getElementById('teacher-tbody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${name}</td><td>${email}</td><td>ZP Rural School</td><td><span class="badge badge-green">Active</span></td>`;
+  tbody.appendChild(tr);
+  
+  const log = document.getElementById('sys-logs');
+  const div = document.createElement('div');
+  div.textContent = `[${new Date().toISOString().replace('T', ' ').slice(0, 19)}] INFO: Admin added new teacher '${name}'.`;
+  log.prepend(div);
+}
+
+// Close components on click away
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.notif-center')) {
-    document.getElementById('notif-center').classList.remove('open');
+    document.getElementById('notif-center')?.classList.remove('open');
+  }
+  if (!e.target.closest('.profile-dropdown')) {
+    document.getElementById('profile-dropdown')?.classList.remove('open'); // fixed selector logic
   }
 });
