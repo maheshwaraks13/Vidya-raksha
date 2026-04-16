@@ -69,6 +69,7 @@ async function handleLogin(e) {
   e.preventDefault();
   const username = document.getElementById('login-user').value;
   const password = document.getElementById('login-pass').value;
+  const role = document.getElementById('login-role')?.value || 'Guest';
   
   const data = await api('/auth/login', {
     method: 'POST',
@@ -81,11 +82,21 @@ async function handleLogin(e) {
     // Check demo users
     const user = demoUsers.find(u => u.username === username && u.password === password);
     if (user) {
-      console.info('Logging in via Simulation Mode');
+      console.info('Logging in via Demo Account');
       loginSuccess('simulated-jwt-token', user, true);
+    } else if (username && password) {
+      // Auto-create session for any other credentials
+      console.info('Logging in via Auto-Guest Mode');
+      const guestUser = {
+        username: username,
+        full_name: username.charAt(0).toUpperCase() + username.slice(1),
+        email: `${username}@vidyaraksha.local`,
+        role: role.charAt(0).toUpperCase() + role.slice(1)
+      };
+      loginSuccess('simulated-guest-token', guestUser, true);
     } else {
       const el = document.getElementById('login-error');
-      el.textContent = 'Invalid credentials. Try admin / admin123';
+      el.textContent = 'Please enter both username and password.';
       el.style.display = 'block';
     }
   }
