@@ -236,6 +236,42 @@ const offlineSchemes = [
     full_info:'KGBV schools are established in educationally backward blocks where the female literacy is below the national average and gender gap in literacy is more than the national average.',
     benefits: ['Free residential facilities', 'Bridge courses for out-of-school girls', 'Vocational training and skill development'],
     images: ['https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=800', 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800']
+  },
+  { 
+    icon:'🥘', 
+    scheme_name:'PM-POSHAN Abhiyan', 
+    ministry:'Ministry of Education', 
+    description:'National programme for providing nutrition support to primary education students.',
+    full_info:'Pradhan Mantri Poshan Shakti Nirman (PM POSHAN) is the revamped Mid-Day Meal scheme aimed at improving nutritional status and school attendance.',
+    benefits: ['Balanced diet recipes', 'Iron and Folic Acid supplements', 'Involvement of local women SHGs for cooking'],
+    images: ['https://images.unsplash.com/photo-1594498653385-d5172b532c00?w=800', 'https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=800']
+  },
+  { 
+    icon:'🏅', 
+    scheme_name:'National Means-cum-Merit Scholarship', 
+    ministry:'Ministry of Education', 
+    description:'Scholarships for meritorious students of economically weaker sections to reduce dropouts at Class 8.',
+    full_info:'The NMMS scheme provides scholarships to gifted students whose parental income is not more than ₹3,50,000 per annum to encourage them to continue their studies.',
+    benefits: ['₹12,000 annual scholarship', 'Renewable until Grade 12', 'Competitive exam preparation support'],
+    images: ['https://images.unsplash.com/photo-152305085306e-e26e326b7b4f?w=800', 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800']
+  },
+  { 
+    icon:'💻', 
+    scheme_name:'Digital India Learning', 
+    ministry:'Ministry of Electronics & IT', 
+    description:'Providing tablets and internet connectivity to rural schools for digital literacy.',
+    full_info:'Under the DI-Learning module, government schools are equipped with computer labs and free internet to bridge the digital divide in rural areas.',
+    benefits: ['Free tabs for meritorious students', 'E-Pathshala digital content', 'Basic computer literacy certification'],
+    images: ['https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800', 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800']
+  },
+  { 
+    icon:'🏠', 
+    scheme_name:'Samagra Shiksha Abhiyan', 
+    ministry:'Ministry of Education', 
+    description:'An integrated scheme for school education from pre-school to class 12.',
+    full_info:'Focuses on improving school infrastructure, teacher quality, and ensuring inclusive education for all children.',
+    benefits: ['Upgraded school classrooms', 'Digital classrooms (Smart Boards)', 'Self-defence training for girl students'],
+    images: ['https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=800', 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800']
   }
 ];
 
