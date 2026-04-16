@@ -183,15 +183,60 @@ const offlineStudents = [
 ];
 
 const offlineSchemes = [
-  { icon:'🎓', scheme_name:'Pre-Matric Scholarship', ministry:'Ministry of Education', description:'Financial support for SC/ST/OBC students from low-income families' },
-  { icon:'🚲', scheme_name:'Free Bicycle Scheme', ministry:'State Government', description:'Free bicycles for students living more than 3km from school' },
-  { icon:'🍱', scheme_name:'Mid-Day Meal Programme', ministry:'Ministry of Education', description:'Free nutritious lunch to all children in government schools' },
-  { icon:'👧', scheme_name:'Beti Bachao Beti Padhao', ministry:'Government of India', description:'Supports education and welfare of the girl child' },
-  { icon:'🏥', scheme_name:'Rashtriya Bal Swasthya Karyakram', ministry:'Ministry of Health', description:'Free health screenings and treatment for school children' },
-  { icon:'📚', scheme_name:'Kasturba Gandhi Balika Vidyalaya', ministry:'Ministry of Education', description:'Residential schools for girls from marginalized communities' },
-  { icon:'💻', scheme_name:'PM eVidya', ministry:'Ministry of Education', description:'Digital learning resources and online education access' },
-  { icon:'🏠', scheme_name:'Samagra Shiksha Abhiyan', ministry:'Ministry of Education', description:'Holistic school improvement including transport support' },
-  { icon:'💰', scheme_name:'National Means-cum-Merit Scholarship', ministry:'Ministry of Education', description:'Merit-based scholarships for students from economically weaker sections' },
+  { 
+    icon:'🎓', 
+    scheme_name:'Pre-Matric Scholarship', 
+    ministry:'Ministry of Education', 
+    description:'Financial support for SC/ST/OBC students from low-income families to reduce dropout rates at the secondary level.',
+    full_info:'This scholarship is awarded to students of Class 9 and 10. It aims to support parents of SC/ST/OBC children for education of their wards so that their incidence of drop-out is minimized.',
+    benefits: ['Annual allowance of ₹3,500', 'Special allowance for disabled students', 'Direct Benefit Transfer (DBT) to student accounts'],
+    images: ['https://images.unsplash.com/photo-1577891729319-f4871c6ec9d9?w=800', 'https://images.unsplash.com/photo-1544652478-6653e09f18a2?w=800']
+  },
+  { 
+    icon:'🚲', 
+    scheme_name:'Free Bicycle Scheme', 
+    ministry:'State Government', 
+    description:'Free bicycles for students living more than 3km from school to ensure easy accessibility.',
+    full_info:'The scheme provides free bicycles to all girl students and boys of marginalized communities who successfully transition to Grade 8 and live in remote areas.',
+    benefits: ['High-quality durable bicycle', 'One-year free maintenance', 'Safety kit (Helmet and Lock) included'],
+    images: ['https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=800', 'https://images.unsplash.com/photo-1471506480208-8ebb75ee5fa7?w=800']
+  },
+  { 
+    icon:'🍱', 
+    scheme_name:'Mid-Day Meal Programme', 
+    ministry:'Ministry of Education', 
+    description:'Free nutritious lunch provided to all children in government and government-aided schools.',
+    full_info:'The Mid-Day Meal Scheme is a school meal programme in India designed to better the nutritional standing of school-age children nationwide.',
+    benefits: ['Hot cooked nutritious meal every school day', 'Standardized calorie and protein intake', 'Improves school attendance and socialization'],
+    images: ['https://images.unsplash.com/photo-1591543132514-6c7083049bed?w=800', 'https://images.unsplash.com/photo-1511690656952-34342bb7c2f2?w=800']
+  },
+  { 
+    icon:'👧', 
+    scheme_name:'Beti Bachao Beti Padhao', 
+    ministry:'Government of India', 
+    description:'A campaign to generate awareness and improve the efficiency of welfare services intended for girls.',
+    full_info:'BBBP is a national initiative to address the declining child sex ratio and related issues of women empowerment over a life-cycle continuum.',
+    benefits: ['Safety and protection of girl child', 'Fixed deposits in Sukanya Samriddhi accounts', 'Priority in government school admissions'],
+    images: ['https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800', 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=800']
+  },
+  { 
+    icon:'🏥', 
+    scheme_name:'Rashtriya Bal Swasthya Karyakram', 
+    ministry:'Ministry of Health', 
+    description:'Free health screenings and early treatment for children up to 18 years.',
+    full_info:'RBSK aims at early identification and early intervention for children from birth to 18 years to cover 4 "D"s: Defects at Birth, Deficiencies, Diseases, Development Delays.',
+    benefits: ['Free quarterly health checkups', 'Free surgical interventions if required', 'Dental and vision screening in schools'],
+    images: ['https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=800', 'https://images.unsplash.com/photo-1538108197023-999330691d90?w=800']
+  },
+  { 
+    icon:'📚', 
+    scheme_name:'Kasturba Gandhi Balika Vidyalaya', 
+    ministry:'Ministry of Education', 
+    description:'Residential schools for girls at upper primary level belonging to SC, ST, OBC and minorities.',
+    full_info:'KGBV schools are established in educationally backward blocks where the female literacy is below the national average and gender gap in literacy is more than the national average.',
+    benefits: ['Free residential facilities', 'Bridge courses for out-of-school girls', 'Vocational training and skill development'],
+    images: ['https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=800', 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800']
+  }
 ];
 
 // ═══════════════════ RISK COMPUTATION ═══════════════════
@@ -664,14 +709,43 @@ async function uploadCSV() {
 
 // ═══════════════════ SCHEMES PAGE ═══════════════════
 function renderSchemes() {
-  document.getElementById('schemes-list').innerHTML = schemesCache.map(s => `
-    <div class="card"><div class="card-body" style="display:flex;gap:14px;align-items:flex-start">
-      <div style="font-size:32px;flex-shrink:0">${s.icon}</div>
-      <div><div style="font-weight:700;font-size:14px;margin-bottom:3px">${s.scheme_name}</div>
-        <div style="font-size:11.5px;color:var(--accent);margin-bottom:8px;font-weight:500">${s.ministry}</div>
-        <div style="font-size:13px;color:var(--muted);line-height:1.5">${s.description}</div>
-        <div style="margin-top:10px"><span class="badge badge-gray" style="font-size:11px">Auto-matched by AI</span></div>
-      </div></div></div>`).join('');
+  document.getElementById('schemes-list').innerHTML = schemesCache.map((s, idx) => `
+    <div class="card" onclick="openSchemeModal(${idx})" style="cursor:pointer; transition:transform 0.2s;">
+      <div class="card-body" style="display:flex;gap:14px;align-items:flex-start">
+        <div style="font-size:32px;flex-shrink:0">${s.icon}</div>
+        <div>
+          <div style="font-weight:700;font-size:14px;margin-bottom:3px">${s.scheme_name}</div>
+          <div style="font-size:11.5px;color:var(--accent);margin-bottom:8px;font-weight:500">${s.ministry}</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.5">${s.description}</div>
+          <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
+            <span class="badge badge-gray" style="font-size:11px">Auto-matched</span>
+            <span style="font-size:12px; font-weight:700; color:var(--primary);">Learn More →</span>
+          </div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function openSchemeModal(idx) {
+  const s = schemesCache[idx];
+  document.getElementById('sch-modal-title').textContent = s.scheme_name;
+  document.getElementById('sch-modal-desc').textContent = s.full_info || s.description;
+  document.getElementById('sch-img-1').src = s.images ? s.images[0] : 'https://images.unsplash.com/photo-1544652478-6653e09f18a2?w=800';
+  document.getElementById('sch-img-2').src = s.images ? s.images[1] : 'https://images.unsplash.com/photo-1577891729319-f4871c6ec9d9?w=800';
+  
+  const bList = s.benefits ? s.benefits : ['Scholarship support', 'Education welfare', 'Welfare scheme'];
+  document.getElementById('sch-modal-benefits').innerHTML = `
+    <div style="font-weight:700; font-size:14px; margin-bottom:12px;">Key Benefits:</div>
+    <ul style="padding-left:18px; font-size:13.5px; color:var(--ink);">
+      ${bList.map(b => `<li style="margin-bottom:6px;">${b}</li>`).join('')}
+    </ul>
+  `;
+  
+  document.getElementById('scheme-modal').classList.add('open');
+}
+
+function closeSchemeModal() {
+  document.getElementById('scheme-modal').classList.remove('open');
 }
 
 // ═══════════════════ ALERTS ═══════════════════

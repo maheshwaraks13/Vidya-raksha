@@ -421,6 +421,32 @@
     <div class="three-col" id="schemes-list"></div>
   </div>
 
+  <!-- SCHEME DETAILS MODAL -->
+  <div class="modal-overlay" id="scheme-modal">
+    <div class="modal-content" style="max-width: 700px;">
+      <div class="modal-header">
+        <div class="modal-title" id="sch-modal-title">Scheme Name</div>
+        <button class="modal-close" onclick="closeSchemeModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:20px;">
+           <img id="sch-img-1" src="" style="width:100%; height:180px; object-fit:cover; border-radius:12px; border:1px solid var(--border);">
+           <img id="sch-img-2" src="" style="width:100%; height:180px; object-fit:cover; border-radius:12px; border:1px solid var(--border);">
+        </div>
+        <div id="sch-modal-desc" style="font-size:14px; line-height:1.7; color:var(--ink); margin-bottom:20px;"></div>
+        <div class="card" style="background:var(--paper); border:none;">
+           <div class="card-body" id="sch-modal-benefits">
+              <!-- Dynamic benefits list -->
+           </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeSchemeModal()">Close</button>
+        <button class="btn btn-primary" onclick="alert('Redirecting to official portal...')">🌐 Visit Official Portal</button>
+      </div>
+    </div>
+  </div>
+
   <!-- CSV UPLOAD -->
   <div class="page fade-in" id="page-upload">
     <div style="margin-bottom:24px"><div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800">Upload Student Data</div>
