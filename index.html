@@ -98,6 +98,7 @@
     <button class="nav-item" onclick="showPage('schemes')"><span class="icon">📋</span> Gov. Schemes</button>
     <button class="nav-item" onclick="showPage('upload')"><span class="icon">📤</span> Upload CSV</button>
     <button class="nav-item" onclick="showPage('add-student')"><span class="icon">➕</span> Add Student</button>
+    <button class="nav-item" onclick="showPage('admin')"><span class="icon">🛡️</span> Admin Panel</button>
     <button class="nav-item" onclick="showPage('about')"><span class="icon">ℹ️</span> About</button>
   </div>
   <div class="sidebar-footer">
@@ -115,9 +116,25 @@
   <div class="topbar">
     <div class="topbar-title" id="page-title">Dashboard Overview</div>
     <div class="topbar-right">
+      <!-- NOTIFICATION CENTER -->
+      <div class="notif-center" id="notif-center">
+        <div class="notif-icon" onclick="toggleNotifs()">
+          🔔<span class="notif-badge" id="notif-count">3</span>
+        </div>
+        <div class="notif-dropdown" id="notif-dropdown">
+          <div class="notif-header">Notifications</div>
+          <div id="notif-list">
+            <div class="notif-item"><strong>Critical:</strong> Priya Sharma's attendance dropped to 38%</div>
+            <div class="notif-item"><strong>Warning:</strong> 5 new students marked as 'High Risk'</div>
+            <div class="notif-item"><strong>System:</strong> Database backup successful</div>
+          </div>
+        </div>
+      </div>
+
       <span class="badge badge-red" id="badge-high"><span class="dot dot-red pulse"></span><span id="high-count">0</span> High</span>
       <span class="badge badge-yellow"><span class="dot dot-yellow"></span><span id="med-count">0</span> Medium</span>
-      <span class="badge badge-green" style="margin-right: 4px;"><span class="dot dot-green"></span>Active</span>
+      <span class="badge badge-green" id="status-badge" style="margin-right: 4px;"><span class="dot dot-green"></span>Active</span>
+      
       <div style="width: 1px; height: 24px; background: var(--border);"></div>
       <div style="position: relative;">
         <div style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding-left: 4px; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='none'" onclick="toggleProfileDropdown(event)">
@@ -146,6 +163,30 @@
 
   <!-- DASHBOARD -->
   <div class="page active fade-in" id="page-dashboard">
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:16px; margin-bottom:24px; background:white; padding:16px; border-radius:var(--radius); border:1px solid var(--border); box-shadow:var(--shadow);">
+       <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+          <div class="form-group" style="width:120px;">
+            <label class="form-label" style="font-size:10px;">Grade/Class</label>
+            <select class="form-select" id="dash-filter-grade" style="padding:6px 10px; font-size:12px;" onchange="applyDashFilters()">
+              <option value="">All Grades</option><option value="7">Grade 7</option><option value="8">Grade 8</option><option value="9">Grade 9</option><option value="10">Grade 10</option>
+            </select>
+          </div>
+          <div class="form-group" style="width:100px;">
+            <label class="form-label" style="font-size:10px;">Section</label>
+            <select class="form-select" id="dash-filter-section" style="padding:6px 10px; font-size:12px;" onchange="applyDashFilters()">
+              <option value="">All</option><option value="A">A</option><option value="B">B</option><option value="C">C</option>
+            </select>
+          </div>
+          <div class="form-group" style="width:180px;">
+            <label class="form-label" style="font-size:10px;">Min Attendance: <span id="att-val">0</span>%</label>
+            <input type="range" min="0" max="100" value="0" id="dash-filter-att" oninput="document.getElementById('att-val').textContent=this.value; applyDashFilters()">
+          </div>
+       </div>
+       <div style="display:flex; gap:10px;">
+          <button class="btn btn-outline btn-sm" onclick="exportReport('PDF')">📄 Export PDF</button>
+          <button class="btn btn-outline btn-sm" onclick="exportReport('CSV')">📊 Export CSV</button>
+       </div>
+    </div>
     <div class="stat-grid">
       <div class="stat-card red"><div class="stat-label">High Risk Students</div><div class="stat-value" id="stat-high" style="color:var(--accent)">—</div><div class="stat-sub" id="stat-high-sub">Loading...</div></div>
       <div class="stat-card yellow"><div class="stat-label">Medium Risk</div><div class="stat-value" id="stat-med" style="color:#b5810a">—</div><div class="stat-sub">Intervention needed</div></div>
@@ -170,32 +211,129 @@
 
   <!-- STUDENTS -->
   <div class="page fade-in" id="page-students">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:16px;background:white;padding:24px;border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow)">
-      <div>
-        <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;letter-spacing:-0.5px">Student Registry</div>
-        <div style="color:var(--muted);font-size:14px;margin-top:4px" id="student-count-label">Loading students...</div>
-      </div>
-      <div style="display:flex;gap:12px;align-items:center;">
-        <div style="text-align:right;margin-right:12px">
-          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">Risk Breakdown</div>
-          <div style="display:flex;gap:4px;margin-top:4px">
-            <span class="badge badge-red" style="padding:2px 8px;font-size:10px" id="registry-high">0 H</span>
-            <span class="badge badge-yellow" style="padding:2px 8px;font-size:10px" id="registry-med">0 M</span>
-            <span class="badge badge-green" style="padding:2px 8px;font-size:10px" id="registry-low">0 L</span>
-          </div>
-        </div>
-        <div class="search-wrap"><input class="search-input" type="text" placeholder="Search students..." oninput="filterStudents(this.value)"></div>
-        <select class="form-select" style="width:160px;padding:10px 14px" onchange="filterByRisk(this.value)">
-          <option value="">All Risk Levels</option>
-          <option value="High">🔴 High Risk</option>
-          <option value="Medium">🟡 Medium Risk</option>
-          <option value="Low">🟢 Low Risk</option>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+      <div><div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.5px">Student Registry</div>
+        <div style="color:var(--muted);font-size:13px;margin-top:3px" id="student-count-label">Loading students...</div></div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div class="search-wrap"><input class="search-input" type="text" placeholder="Search name or ID..." oninput="filterStudents(this.value)"></div>
+        <select class="form-select" style="width:140px;padding:8px 12px" onchange="filterByRisk(this.value)">
+          <option value="">All Risk Levels</option><option value="High">High Risk</option><option value="Medium">Medium Risk</option><option value="Low">Low Risk</option>
         </select>
+        <button class="btn btn-primary btn-sm" onclick="showPage('add-student')">+ Add</button>
       </div>
     </div>
     <div class="card"><div class="table-wrap"><table id="student-table"><thead><tr>
-      <th>Student</th><th>Grade</th><th>Attendance</th><th>Exam Score</th><th>Distance</th><th>Family Income</th><th>Risk Score</th><th>Risk Level</th><th>Action</th>
+      <th>Student</th><th>Grade</th><th>Attendance</th><th>Score</th><th>Distance</th><th>Income</th><th>Risk Score</th><th>Risk Level</th><th>Action</th>
     </tr></thead><tbody id="student-tbody"></tbody></table></div></div>
+  </div>
+
+  <!-- EDIT STUDENT MODAL -->
+  <div class="modal-overlay" id="edit-student-modal">
+    <div class="modal-content" style="max-width: 800px;">
+      <div class="modal-header">
+        <div class="modal-title">Edit Student Profile</div>
+        <button class="modal-close" onclick="closeEditModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <form id="edit-student-form">
+          <input type="hidden" id="edit-id">
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">Student Name</label><input class="form-input" id="edit-name" type="text" required></div>
+            <div class="form-group"><label class="form-label">Grade</label><input class="form-input" id="edit-grade" type="number" required></div>
+            <div class="form-group"><label class="form-label">Section</label><select class="form-select" id="edit-section"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></div>
+            <div class="form-group"><label class="form-label">Attendance %</label><input class="form-input" id="edit-att" type="number" required></div>
+            <div class="form-group"><label class="form-label">Exam Score</label><input class="form-input" id="edit-score" type="number" required></div>
+            <div class="form-group"><label class="form-label">Distance (km)</label><input class="form-input" id="edit-dist" type="number" required></div>
+            <div class="form-group"><label class="form-label">Income (₹)</label><input class="form-input" id="edit-inc" type="number" required></div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeEditModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitEditStudent()">💾 Update Record</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STUDENT PROFILE -->
+  <div class="page fade-in" id="page-profile">
+    <div style="display:flex; gap:20px; margin-bottom:24px; align-items:flex-end; justify-content:space-between;">
+       <div style="display:flex; gap:20px; align-items:center;">
+          <button class="btn btn-outline btn-sm" onclick="showPage('students')">← Back</button>
+          <div>
+            <h1 id="prof-name" style="font-family:'Syne',sans-serif; margin:0;">Student Name</h1>
+            <div id="prof-id" style="color:var(--muted); font-size:14px;">Student ID: —</div>
+          </div>
+       </div>
+       <div style="display:flex; gap:10px;">
+          <button class="btn btn-primary btn-sm" onclick="openInterventionModal()">➕ Record Intervention</button>
+          <button class="btn btn-outline btn-sm" id="prof-predict-btn">🔮 Re-Analyze</button>
+       </div>
+    </div>
+
+    <div class="two-col" style="grid-template-columns: 1fr 2fr;">
+      <div class="card">
+        <div class="card-header"><div class="card-title">Vitals</div></div>
+        <div class="card-body" id="prof-vitals">
+           <!-- Dynamic vitals go here -->
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Performance History</div></div>
+        <div class="card-body">
+          <div class="chart-container" style="height:220px"><canvas id="profChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header"><div class="card-title">Risk Insights (AI)</div></div>
+        <div class="card-body">
+          <div id="prof-risk-explanation"></div>
+          <div style="margin-top:20px;">
+            <div style="font-weight:700; font-size:14px; margin-bottom:10px;">AI Recommendations</div>
+            <div id="prof-recommendations"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Intervention & Alert History</div></div>
+        <div class="card-body" style="padding:0 22px">
+           <div class="timeline-line" id="prof-timeline"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INTERVENTION MODAL -->
+  <div class="modal-overlay" id="intervention-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">Record New Intervention</div>
+        <button class="modal-close" onclick="closeInterventionModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Action Type</label>
+          <select class="form-select" id="int-type">
+            <option>Counseling Session</option>
+            <option>Parent-Teacher Meeting</option>
+            <option>Financial Support Referral</option>
+            <option>Home Visit</option>
+            <option>Mentorship Program</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes / Outcome</label>
+          <textarea class="form-input" rows="4" id="int-notes" placeholder="e.g. Discussed low attendance, parent cited lack of transport..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeInterventionModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitIntervention()">💾 Save Intervention</button>
+      </div>
+    </div>
   </div>
 
   <!-- PREDICT -->
@@ -316,6 +454,7 @@ Priya Sharma,13,F,7,72,65,3,12000,2,0,1,0</pre></div>
             <div class="form-group"><label class="form-label">Student ID</label><input class="form-input" id="new-id" type="text" placeholder="e.g. S126" required></div>
             <div class="form-group"><label class="form-label">Student Name</label><input class="form-input" id="new-name" type="text" placeholder="e.g. Sunil Kumar" required></div>
             <div class="form-group"><label class="form-label">Age</label><input class="form-input" id="new-age" type="number" required></div>
+            <div class="form-group"><label class="form-label">Section</label><select class="form-select" id="new-section"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></div>
             <div class="form-group"><label class="form-label">Gender</label><select class="form-select" id="new-gender"><option value="M">Male</option><option value="F">Female</option></select></div>
             <div class="form-group"><label class="form-label">Grade</label><input class="form-input" id="new-grade" type="number" required></div>
             <div class="form-group"><label class="form-label">Attendance %</label><input class="form-input" id="new-att" type="number" required></div>
@@ -333,6 +472,40 @@ Priya Sharma,13,F,7,72,65,3,12000,2,0,1,0</pre></div>
           <button class="btn btn-primary" type="submit" style="margin-top:20px">💾 Save Student</button>
         </form>
       </div>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div class="page fade-in" id="page-admin">
+    <div style="margin-bottom:24px">
+      <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800">Admin Control Panel</div>
+      <div style="color:var(--muted);font-size:13px;margin-top:3px">Manage users, schools, and monitor system health</div>
+    </div>
+    
+    <div class="two-col">
+       <div class="card">
+         <div class="card-header"><div class="card-title">Manage Teachers</div><button class="btn btn-primary btn-sm" onclick="addTeacherSim()">+ Add Teacher</button></div>
+         <div class="card-body">
+           <table id="teacher-table">
+             <thead><tr><th>Name</th><th>Email</th><th>School</th><th>Status</th></tr></thead>
+             <tbody id="teacher-tbody">
+                <tr><td>Rajesh Kumar</td><td>rkumar@school.edu.in</td><td>ZP Nandur</td><td><span class="badge badge-green">Active</span></td></tr>
+                <tr><td>Suhani Verma</td><td>sverma@deo.gov.in</td><td>Govt Wadgaon</td><td><span class="badge badge-green">Active</span></td></tr>
+             </tbody>
+           </table>
+         </div>
+       </div>
+       <div class="card">
+         <div class="card-header"><div class="card-title">System Logs</div></div>
+         <div class="card-body">
+           <div id="sys-logs" style="font-family: 'DM Mono', monospace; font-size: 11px; max-height: 300px; overflow-y: auto; background: #1e293b; color: #94a3b8; padding: 16px; border-radius: 8px;">
+              <div>[2024-04-16 07:12:04] INFO: Database backup successful.</div>
+              <div>[2024-04-16 07:15:33] WARN: High risk identified for S007.</div>
+              <div>[2024-04-16 07:18:21] INFO: SMS Gateway ping successful (0.5ms).</div>
+              <div>[2024-04-16 07:22:11] INFO: User 'admin' logged in from 192.168.1.1.</div>
+           </div>
+         </div>
+       </div>
     </div>
   </div>
 

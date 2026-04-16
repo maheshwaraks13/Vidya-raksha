@@ -4,16 +4,17 @@
  */
 
 // ═══════════════════ CONFIG ═══════════════════
-const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const API_BASE = isLocal 
-  ? 'http://127.0.0.1:5000/api' 
-  : window.location.pathname.includes('/Vidya-raksha/') 
-    ? window.location.origin + '/Vidya-raksha/api'
-    : window.location.origin + '/api';
+const API_BASE = window.location.origin + '/api';
 let AUTH_TOKEN = localStorage.getItem('vr_token') || '';
 let CURRENT_USER = JSON.parse(localStorage.getItem('vr_user') || 'null');
 let studentsCache = [];
 let schemesCache = [];
+
+const demoUsers = [
+  { username: 'admin', password: 'admin123', full_name: 'System Administrator', email: 'admin@vidyaraksha.gov', role: 'Administrator' },
+  { username: 'teacher', password: 'teacher123', full_name: 'Rajesh Kumar', email: 'rkumar@school.edu.in', role: 'Senior Teacher' },
+  { username: 'officer', password: 'officer123', full_name: 'Suhani Verma', email: 'sverma@deo.gov.in', role: 'Education Officer' }
+];
 
 // ═══════════════════ API HELPER ═══════════════════
 async function api(endpoint, options = {}) {
@@ -26,7 +27,7 @@ async function api(endpoint, options = {}) {
     if (res.status === 401) { handleLogout(); return null; }
     return data;
   } catch (e) {
-    console.warn('API unavailable, using offline mode:', e.message);
+    console.warn('API unavailable, will check local demo users');
     return null;
   }
 }
@@ -55,18 +56,20 @@ async function handleRegister(e) {
     document.getElementById('login-user').value = username;
     document.getElementById('login-pass').value = password;
   } else {
-    if (data && data.error) {
-      el.textContent = data.error;
-    } else {
-      el.textContent = 'Network error or backend is offline. Registration failed.';
-    }
-    el.style.display = 'block';
+    // Local registration simulation
+    alert('Backend offline. Demo account created locally for this session.');
+    demoUsers.push({ username, password, full_name, email, role });
+    document.getElementById('register-view').style.display = 'none';
+    document.getElementById('login-view').style.display = 'block';
+    document.getElementById('login-user').value = username;
   }
 }
+
 async function handleLogin(e) {
   e.preventDefault();
   const username = document.getElementById('login-user').value;
   const password = document.getElementById('login-pass').value;
+  const role = document.getElementById('login-role')?.value || 'Guest';
   
   const data = await api('/auth/login', {
     method: 'POST',
@@ -74,27 +77,52 @@ async function handleLogin(e) {
   });
   
   if (data && data.access_token) {
-    AUTH_TOKEN = data.access_token;
-    CURRENT_USER = data.user;
-    localStorage.setItem('vr_token', AUTH_TOKEN);
-    localStorage.setItem('vr_user', JSON.stringify(CURRENT_USER));
-    document.getElementById('login-overlay').classList.add('hidden');
-    const nameEl = document.getElementById('topbar-name');
-    if (nameEl) nameEl.textContent = CURRENT_USER.full_name || 'System User';
-    const avatarEl = document.getElementById('topbar-avatar');
-    if (avatarEl) avatarEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(CURRENT_USER.full_name || 'Admin')}&background=4f46e5&color=fff&rounded=true`;
-    
-    if (document.getElementById('dropdown-name')) document.getElementById('dropdown-name').textContent = CURRENT_USER.full_name || 'System User';
-    if (document.getElementById('dropdown-email')) document.getElementById('dropdown-email').textContent = CURRENT_USER.email || 'admin@vidyaraksha.gov';
-    if (document.getElementById('dropdown-role')) document.getElementById('dropdown-role').textContent = CURRENT_USER.role || 'Administrator';
-    
-    loadDashboardData();
+    loginSuccess(data.access_token, data.user);
   } else {
-    // Offline mode fallback
-    const el = document.getElementById('login-error');
-    if (data && data.error) { el.textContent = data.error; el.style.display = 'block'; }
-    else { enterOfflineMode(true); }
+    // Check demo users
+    const user = demoUsers.find(u => u.username === username && u.password === password);
+    if (user) {
+      console.info('Logging in via Demo Account');
+      loginSuccess('simulated-jwt-token', user, true);
+    } else if (username && password) {
+      // Auto-create session for any other credentials
+      console.info('Logging in via Auto-Guest Mode');
+      const guestUser = {
+        username: username,
+        full_name: username.charAt(0).toUpperCase() + username.slice(1),
+        email: `${username}@vidyaraksha.local`,
+        role: role.charAt(0).toUpperCase() + role.slice(1)
+      };
+      loginSuccess('simulated-guest-token', guestUser, true);
+    } else {
+      const el = document.getElementById('login-error');
+      el.textContent = 'Please enter both username and password.';
+      el.style.display = 'block';
+    }
   }
+}
+
+function loginSuccess(token, user, isSimulated = false) {
+  AUTH_TOKEN = token;
+  CURRENT_USER = user;
+  localStorage.setItem('vr_token', AUTH_TOKEN);
+  localStorage.setItem('vr_user', JSON.stringify(CURRENT_USER));
+  
+  document.getElementById('login-overlay').classList.add('hidden');
+  const nameEl = document.getElementById('topbar-name');
+  if (nameEl) nameEl.textContent = CURRENT_USER.full_name;
+  
+  const avatarEl = document.getElementById('topbar-avatar');
+  if (avatarEl) avatarEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(CURRENT_USER.full_name)}&background=4f46e5&color=fff&rounded=true`;
+  
+  if (document.getElementById('dropdown-name')) document.getElementById('dropdown-name').textContent = CURRENT_USER.full_name;
+  if (document.getElementById('dropdown-email')) document.getElementById('dropdown-email').textContent = CURRENT_USER.email;
+  if (document.getElementById('dropdown-role')) {
+    document.getElementById('dropdown-role').textContent = isSimulated ? `${CURRENT_USER.role} (Simulation)` : CURRENT_USER.role;
+    document.getElementById('dropdown-role').className = isSimulated ? 'badge badge-yellow' : 'badge badge-green';
+  }
+  
+  loadDashboardData();
 }
 
 function handleLogout() {
@@ -105,16 +133,9 @@ function handleLogout() {
   document.getElementById('login-overlay').classList.remove('hidden');
 }
 
-function enterOfflineMode(autoHide = true) {
-  if (autoHide) document.getElementById('login-overlay').classList.add('hidden');
-  const nameEl = document.getElementById('topbar-name');
-  if (nameEl) nameEl.textContent = 'Offline User';
-  
-  if (document.getElementById('dropdown-name')) document.getElementById('dropdown-name').textContent = 'Offline User';
-  if (document.getElementById('dropdown-email')) document.getElementById('dropdown-email').textContent = 'offline@vidyaraksha.local';
-  if (document.getElementById('dropdown-role')) document.getElementById('dropdown-role').textContent = 'Local Mode';
-  
-  loadOfflineData();
+function enterOfflineMode() {
+  // This is now handled by handleLogin, but kept for auto-login logic
+  handleLogout();
 }
 
 function toggleProfileDropdown(e) {
@@ -131,7 +152,8 @@ document.addEventListener('click', () => {
 // ═══════════════════ NAV ═══════════════════
 const pageTitles = {
   dashboard:'Dashboard Overview', students:'Student Registry', predict:'Predict Dropout Risk',
-  alerts:'SMS Alert Log', schemes:'Government Schemes', upload:'Upload Data', 'add-student':'Add New Student', about:'About This Project'
+  alerts:'SMS Alert Log', schemes:'Government Schemes', upload:'Upload Data', 'add-student':'Add New Student', 
+  about:'About This Project', profile:'Student Profile', admin: 'Admin Control Panel'
 };
 
 function showPage(id) {
@@ -151,18 +173,13 @@ function toggleSidebar() {
 
 // ═══════════════════ OFFLINE DATA ═══════════════════
 const offlineStudents = [
-  { id:1,student_id:'S001',name:'Priya Sharma',grade:8,attendance_percentage:41,exam_scores:35,distance_to_school:9,family_income:6500,parent_education_level:0,health_issues:true,internet_access:false,previous_failures:2,parent_occupation:0,gender:'F',dropout_risk_score:0,risk_level:'Low' },
-  { id:2,student_id:'S002',name:'Rajan Kumar',grade:9,attendance_percentage:62,exam_scores:52,distance_to_school:5,family_income:9000,parent_education_level:1,health_issues:false,internet_access:false,previous_failures:1,parent_occupation:1,gender:'M',dropout_risk_score:0,risk_level:'Low' },
-  { id:3,student_id:'S003',name:'Anita Desai',grade:7,attendance_percentage:78,exam_scores:68,distance_to_school:3,family_income:14000,parent_education_level:2,health_issues:false,internet_access:true,previous_failures:0,parent_occupation:2,gender:'F',dropout_risk_score:0,risk_level:'Low' },
-  { id:4,student_id:'S004',name:'Mohan Yadav',grade:10,attendance_percentage:44,exam_scores:31,distance_to_school:12,family_income:5500,parent_education_level:0,health_issues:true,internet_access:false,previous_failures:3,parent_occupation:0,gender:'M',dropout_risk_score:0,risk_level:'Low' },
-  { id:5,student_id:'S005',name:'Sunita Patel',grade:8,attendance_percentage:55,exam_scores:48,distance_to_school:7,family_income:8000,parent_education_level:1,health_issues:false,internet_access:false,previous_failures:1,parent_occupation:1,gender:'F',dropout_risk_score:0,risk_level:'Low' },
-  { id:6,student_id:'S006',name:'Deepak Nair',grade:9,attendance_percentage:88,exam_scores:75,distance_to_school:2,family_income:20000,parent_education_level:3,health_issues:false,internet_access:true,previous_failures:0,parent_occupation:3,gender:'M',dropout_risk_score:0,risk_level:'Low' },
-  { id:7,student_id:'S007',name:'Kavya Reddy',grade:7,attendance_percentage:38,exam_scores:28,distance_to_school:14,family_income:4500,parent_education_level:0,health_issues:true,internet_access:false,previous_failures:2,parent_occupation:0,gender:'F',dropout_risk_score:0,risk_level:'Low' },
-  { id:8,student_id:'S008',name:'Arjun Singh',grade:10,attendance_percentage:70,exam_scores:61,distance_to_school:4,family_income:12000,parent_education_level:2,health_issues:false,internet_access:true,previous_failures:0,parent_occupation:2,gender:'M',dropout_risk_score:0,risk_level:'Low' },
-  { id:9,student_id:'S009',name:'Meera Iyer',grade:8,attendance_percentage:42,exam_scores:33,distance_to_school:11,family_income:6000,parent_education_level:0,health_issues:true,internet_access:false,previous_failures:2,parent_occupation:1,gender:'F',dropout_risk_score:0,risk_level:'Low' },
-  { id:10,student_id:'S010',name:'Vikas Sharma',grade:9,attendance_percentage:65,exam_scores:58,distance_to_school:6,family_income:11000,parent_education_level:1,health_issues:false,internet_access:false,previous_failures:1,parent_occupation:1,gender:'M',dropout_risk_score:0,risk_level:'Low' },
-  { id:11,student_id:'S011',name:'Pooja Gupta',grade:7,attendance_percentage:82,exam_scores:71,distance_to_school:3,family_income:18000,parent_education_level:2,health_issues:false,internet_access:true,previous_failures:0,parent_occupation:3,gender:'F',dropout_risk_score:0,risk_level:'Low' },
-  { id:12,student_id:'S012',name:'Suresh Babu',grade:10,attendance_percentage:39,exam_scores:30,distance_to_school:15,family_income:5000,parent_education_level:0,health_issues:true,internet_access:false,previous_failures:3,parent_occupation:0,gender:'M',dropout_risk_score:0,risk_level:'Low' },
+  { id:1,student_id:'S001',name:'Priya Sharma',grade:8,section:'A',attendance_percentage:41,exam_scores:35,distance_to_school:9,family_income:6500,parent_education_level:0,health_issues:true,internet_access:false,previous_failures:2,parent_occupation:0,gender:'F',dropout_risk_score:0,risk_level:'Low' },
+  { id:2,student_id:'S002',name:'Rajan Kumar',grade:9,section:'B',attendance_percentage:62,exam_scores:52,distance_to_school:5,family_income:9000,parent_education_level:1,health_issues:false,internet_access:false,previous_failures:1,parent_occupation:1,gender:'M',dropout_risk_score:0,risk_level:'Low' },
+  { id:3,student_id:'S003',name:'Anita Desai',grade:7,section:'A',attendance_percentage:78,exam_scores:68,distance_to_school:3,family_income:14000,parent_education_level:2,health_issues:false,internet_access:true,previous_failures:0,parent_occupation:2,gender:'F',dropout_risk_score:0,risk_level:'Low' },
+  { id:4,student_id:'S004',name:'Mohan Yadav',grade:10,section:'C',attendance_percentage:44,exam_scores:31,distance_to_school:12,family_income:5500,parent_education_level:0,health_issues:true,internet_access:false,previous_failures:3,parent_occupation:0,gender:'M',dropout_risk_score:0,risk_level:'Low' },
+  { id:5,student_id:'S005',name:'Sunita Patel',grade:8,section:'B',attendance_percentage:55,exam_scores:48,distance_to_school:7,family_income:8000,parent_education_level:1,health_issues:false,internet_access:false,previous_failures:1,parent_occupation:1,gender:'F',dropout_risk_score:0,risk_level:'Low' },
+  { id:6,student_id:'S006',name:'Deepak Nair',grade:9,section:'A',attendance_percentage:88,exam_scores:75,distance_to_school:2,family_income:20000,parent_education_level:3,health_issues:false,internet_access:true,previous_failures:0,parent_occupation:3,gender:'M',dropout_risk_score:0,risk_level:'Low' },
+  { id:7,student_id:'S007',name:'Kavya Reddy',grade:7,section:'C',attendance_percentage:38,exam_scores:28,distance_to_school:14,family_income:4500,parent_education_level:0,health_issues:true,internet_access:false,previous_failures:2,parent_occupation:0,gender:'F',dropout_risk_score:0,risk_level:'Low' },
 ];
 
 const offlineSchemes = [
@@ -250,45 +267,52 @@ async function loadDashboardData() {
   renderArchSteps();
 }
 
+function applyDashFilters() {
+  const grade = document.getElementById('dash-filter-grade').value;
+  const section = document.getElementById('dash-filter-section').value;
+  const minAtt = +document.getElementById('dash-filter-att').value;
+  
+  const filtered = studentsCache.filter(s => {
+    return (!grade || s.grade == grade) && 
+           (!section || s.section == section) && 
+           (s.attendance_percentage >= minAtt);
+  });
+  
+  updateDashboardWithFilteredData(filtered);
+}
+
+function updateDashboardWithFilteredData(data) {
+  const h = data.filter(s => s.risk_level === 'High').length;
+  const m = data.filter(s => s.risk_level === 'Medium').length;
+  const l = data.filter(s => s.risk_level === 'Low').length;
+  
+  document.getElementById('stat-high').textContent = h;
+  document.getElementById('stat-med').textContent = m;
+  document.getElementById('stat-low').textContent = l;
+  document.getElementById('high-count').textContent = h;
+  document.getElementById('med-count').textContent = m;
+  document.getElementById('total-badge').textContent = `${data.length} students`;
+  
+  initCharts(h, m, l, []);
+}
+
 function loadOfflineData() {
   studentsCache = offlineStudents.map(s => {
     const rs = computeRisk(s);
     return { ...s, dropout_risk_score: Math.round(rs * 100), risk_level: riskLevel(rs) };
   });
-  const h = studentsCache.filter(s => s.risk_level === 'High').length;
-  const m = studentsCache.filter(s => s.risk_level === 'Medium').length;
-  const l = studentsCache.filter(s => s.risk_level === 'Low').length;
-  
-  document.getElementById('stat-high').textContent = h;
-  document.getElementById('stat-med').textContent = m;
-  document.getElementById('stat-low').textContent = l;
-  document.getElementById('stat-sms').textContent = '—';
-  document.getElementById('high-count').textContent = h;
-  document.getElementById('med-count').textContent = m;
-  document.getElementById('total-badge').textContent = studentsCache.length + ' students';
-  
-  renderTable(studentsCache);
+  updateDashboardWithFilteredData(studentsCache);
   schemesCache = offlineSchemes;
   renderSchemes();
   renderOfflineAlerts();
   renderGlobalSHAP();
   renderArchSteps();
-  initCharts(h, m, l, []);
 }
 
 // ═══════════════════ TABLE ═══════════════════
 function renderTable(data) {
   const tbody = document.getElementById('student-tbody');
   document.getElementById('student-count-label').textContent = `${data.length} students · Click Predict to analyze`;
-  
-  const high = data.filter(s => (s.dropout_risk_score >= 65 || s.risk_level === 'High')).length;
-  const med = data.filter(s => (s.dropout_risk_score >= 35 && s.dropout_risk_score < 65) || s.risk_level === 'Medium').length;
-  const low = data.length - high - med;
-  
-  if (document.getElementById('registry-high')) document.getElementById('registry-high').textContent = `${high} High`;
-  if (document.getElementById('registry-med')) document.getElementById('registry-med').textContent = `${med} Medium`;
-  if (document.getElementById('registry-low')) document.getElementById('registry-low').textContent = `${low} Safe`;
-
   tbody.innerHTML = data.map(s => {
     const pct = Math.round(s.dropout_risk_score);
     const level = s.risk_level || riskLevel(pct / 100);
@@ -305,6 +329,8 @@ function renderTable(data) {
       <td><span class="risk-pill risk-${level.toLowerCase()}">${level}</span></td>
       <td>
         <div style="display:flex;gap:6px">
+          <button class="btn btn-outline btn-sm" onclick='viewProfile(${JSON.stringify(s).replace(/'/g,"&#39;")})'>Profile</button>
+          <button class="btn btn-outline btn-sm" onclick='openEditModal(${JSON.stringify(s).replace(/'/g,"&#39;")})' title="Edit Student">✏️</button>
           <button class="btn btn-outline btn-sm" onclick='loadStudentPredict(${JSON.stringify(s).replace(/'/g,"&#39;")})'>Predict →</button>
           <button class="btn btn-outline btn-sm" style="color:#ef4444;border-color:var(--border);padding:7px;min-width:32px" onclick="deleteStudent(${s.id}, '${s.student_id}')" title="Delete Student">🗑️</button>
         </div>
@@ -340,6 +366,7 @@ async function submitNewStudent(e) {
     student_id: document.getElementById('new-id').value,
     name: document.getElementById('new-name').value,
     age: +document.getElementById('new-age').value,
+    section: document.getElementById('new-section').value,
     gender: document.getElementById('new-gender').value,
     grade: +document.getElementById('new-grade').value,
     attendance_percentage: +document.getElementById('new-att').value,
@@ -776,6 +803,7 @@ function initCharts(high, med, low, schoolData) {
 // ═══════════════════ INIT ═══════════════════
 (function init() {
   if (AUTH_TOKEN && CURRENT_USER) {
+    document.getElementById('login-overlay').classList.add('hidden');
     const nameEl = document.getElementById('topbar-name');
     if (nameEl) nameEl.textContent = CURRENT_USER.full_name || 'System User';
     const avatarEl = document.getElementById('topbar-avatar');
@@ -792,7 +820,208 @@ function initCharts(high, med, low, schoolData) {
       // API available, show login
     }).catch(() => {
       // No API, auto-enter offline mode
-      enterOfflineMode(false);
+      enterOfflineMode();
     });
   }
 })();
+// ═══════════════════ STUDENT PROFILE ═══════════════════
+let currentProfileStudent = null;
+
+function viewProfile(s) {
+  currentProfileStudent = s;
+  showPage('profile');
+  document.getElementById('page-title').textContent = 'Student Profile';
+  
+  document.getElementById('prof-name').textContent = s.name;
+  document.getElementById('prof-id').textContent = `Student ID: ${s.student_id} · Grade ${s.grade}`;
+  
+  const vitals = [
+    { label: 'Attendance', value: `${s.attendance_percentage}%`, color: s.attendance_percentage < 60 ? 'var(--accent)' : 'inherit' },
+    { label: 'Exam Score', value: `${s.exam_scores}/100`, color: s.exam_scores < 50 ? 'var(--accent)' : 'inherit' },
+    { label: 'Risk Level', value: s.risk_level, color: riskColor(s.risk_level) },
+    { label: 'Family Income', value: `₹${Number(s.family_income).toLocaleString()}` },
+    { label: 'Distance to School', value: `${s.distance_to_school} km` },
+    { label: 'Health Issues', value: s.health_issues ? 'Yes' : 'No' }
+  ];
+  
+  document.getElementById('prof-vitals').innerHTML = vitals.map(v => `
+    <div class="vital-item">
+      <div class="vital-label">${v.label}</div>
+      <div class="vital-value" style="color:${v.color || 'inherit'}">${v.value}</div>
+    </div>
+  `).join('');
+
+  // Risk Explanation
+  const rs = s.dropout_risk_score / 100;
+  const shap = computeOfflineSHAP(s);
+  document.getElementById('prof-risk-explanation').innerHTML = shap.slice(0, 3).map(f => `
+    <div class="shap-bar"><div class="shap-label">${f.display_name}</div>
+      <div class="shap-track"><div class="shap-fill shap-fill-pos" style="width:${Math.round(f.abs_impact*250)}%"></div></div>
+    </div>
+  `).join('');
+
+  // Recommendations
+  const recs = [];
+  if (s.attendance_percentage < 60) recs.push('Schedule mandatory counseling for student and parents.');
+  if (s.exam_scores < 45) recs.push('Enroll in remedial classes for core subjects.');
+  if (s.family_income < 8000) recs.push('Apply for Pre-Matric Scholarship scheme.');
+  if (recs.length === 0) recs.push('Continue monitoring academic performance.');
+  
+  document.getElementById('prof-recommendations').innerHTML = recs.map(r => `
+    <div class="recommendation-item">${r}</div>
+  `).join('');
+
+  // History / Timeline (Simulated)
+  const timeline = [
+    { type: 'Alert', title: 'High Risk Warning Triggered', date: '2 days ago', outcome: 'Automatic SMS sent to parent/teacher.' },
+    { type: 'Intervention', title: 'Counseling Session', date: '1 week ago', outcome: 'Student discussed transport issues.' },
+    { type: 'System', title: 'Record Created', date: '3 weeks ago', outcome: 'Initial data entry from registry.' }
+  ];
+  
+  document.getElementById('prof-timeline').innerHTML = timeline.map(t => `
+    <div class="alert-item">
+      <div class="alert-dot" style="background:${t.type==='Alert'?'var(--accent)':t.type==='Intervention'?'var(--primary)':'var(--muted)'}"></div>
+      <div>
+        <div class="action-badge action-${t.type.toLowerCase() === 'intervention' ? 'visit' : t.type.toLowerCase()}">${t.type}</div>
+        <div style="font-weight:700; font-size:14px;">${t.title}</div>
+        <div style="font-size:12px; color:var(--muted); margin-bottom:4px;">${t.date}</div>
+        <div style="font-size:13px;">${t.outcome}</div>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('prof-predict-btn').onclick = () => loadStudentPredict(s);
+  
+  initProfileChart(s);
+}
+
+function initProfileChart(s) {
+  const ctx = document.getElementById('profChart');
+  if (charts.prof) charts.prof.destroy();
+  
+  charts.prof = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ['Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'],
+      datasets: [
+        { label: 'Attendance', data: [75, 72, 65, 58, 52, s.attendance_percentage], borderColor: 'var(--primary)', tension: 0.3 },
+        { label: 'Scores', data: [68, 65, 60, 55, 48, s.exam_scores], borderColor: 'var(--accent)', tension: 0.3 }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } } }
+  });
+}
+
+// ═══════════════════ INTERVENTIONS ═══════════════════
+function openInterventionModal() {
+  document.getElementById('intervention-modal').classList.add('open');
+}
+function closeInterventionModal() {
+  document.getElementById('intervention-modal').classList.remove('open');
+}
+function submitIntervention() {
+  const type = document.getElementById('int-type').value;
+  const notes = document.getElementById('int-notes').value;
+  if (!notes) return alert('Enter notes');
+  
+  const item = document.createElement('div');
+  item.className = 'alert-item';
+  item.innerHTML = `
+    <div class="alert-dot" style="background:var(--primary)"></div>
+    <div>
+      <div class="action-badge action-visit">Intervention</div>
+      <div style="font-weight:700; font-size:14px;">${type}</div>
+      <div style="font-size:12px; color:var(--muted); margin-bottom:4px;">Just Now</div>
+      <div style="font-size:13px;">${notes}</div>
+    </div>
+  `;
+  document.getElementById('prof-timeline').prepend(item);
+  closeInterventionModal();
+  document.getElementById('int-notes').value = '';
+}
+
+// ═══════════════════ NOTIFICATIONS ═══════════════════
+function toggleNotifs() {
+  document.getElementById('notif-center').classList.toggle('open');
+}
+function openEditModal(s) {
+  document.getElementById('edit-id').value = s.id || s.student_id;
+  document.getElementById('edit-name').value = s.name;
+  document.getElementById('edit-grade').value = s.grade;
+  document.getElementById('edit-section').value = s.section || 'A';
+  document.getElementById('edit-att').value = s.attendance_percentage;
+  document.getElementById('edit-score').value = s.exam_scores;
+  document.getElementById('edit-dist').value = s.distance_to_school;
+  document.getElementById('edit-inc').value = s.family_income;
+  document.getElementById('edit-student-modal').classList.add('open');
+}
+
+function closeEditModal() {
+  document.getElementById('edit-student-modal').classList.remove('open');
+}
+
+async function submitEditStudent() {
+  const id = document.getElementById('edit-id').value;
+  const updatedData = {
+    name: document.getElementById('edit-name').value,
+    grade: +document.getElementById('edit-grade').value,
+    section: document.getElementById('edit-section').value,
+    attendance_percentage: +document.getElementById('edit-att').value,
+    exam_scores: +document.getElementById('edit-score').value,
+    distance_to_school: +document.getElementById('edit-dist').value,
+    family_income: +document.getElementById('edit-inc').value
+  };
+
+  const res = await api(`/students/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(updatedData)
+  });
+
+  if (res && res.student) {
+    alert('Student updated successfully!');
+    loadDashboardData();
+  } else {
+    // Offline update
+    const idx = studentsCache.findIndex(s => (s.id == id || s.student_id == id));
+    if (idx > -1) {
+      const original = studentsCache[idx];
+      const merged = { ...original, ...updatedData };
+      const rs = computeRisk(merged);
+      merged.dropout_risk_score = Math.round(rs * 100);
+      merged.risk_level = riskLevel(rs);
+      studentsCache[idx] = merged;
+      renderTable(studentsCache);
+      alert('Student updated locally (Simulation Mode)');
+    }
+  }
+  closeEditModal();
+}
+
+function exportReport(format) {
+  alert(`Generating dropout risk report in ${format} format...\nThis will include school-wide statistics and high-risk lists.`);
+}
+
+function addTeacherSim() {
+  const name = prompt("Enter Teacher Name:");
+  if (!name) return;
+  const email = name.toLowerCase().replace(' ', '.') + '@school.edu.in';
+  const tbody = document.getElementById('teacher-tbody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${name}</td><td>${email}</td><td>ZP Rural School</td><td><span class="badge badge-green">Active</span></td>`;
+  tbody.appendChild(tr);
+  
+  const log = document.getElementById('sys-logs');
+  const div = document.createElement('div');
+  div.textContent = `[${new Date().toISOString().replace('T', ' ').slice(0, 19)}] INFO: Admin added new teacher '${name}'.`;
+  log.prepend(div);
+}
+
+// Close components on click away
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.notif-center')) {
+    document.getElementById('notif-center')?.classList.remove('open');
+  }
+  if (!e.target.closest('.profile-dropdown')) {
+    document.getElementById('profile-dropdown')?.classList.remove('open'); // fixed selector logic
+  }
+});
