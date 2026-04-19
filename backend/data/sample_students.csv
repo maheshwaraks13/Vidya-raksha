@@ -1,8 +1,8 @@
 student_id,name,age,gender,grade,attendance_percentage,exam_scores,previous_failures,distance_to_school,family_income,parent_education_level,parent_occupation,transport_availability,internet_access,health_issues,parent_name,parent_phone
 S0001,Ananya Bhosale,13,F,7,54,37,1,13,23065,3,1,0,0,0,Vihaan Bhosale,9871611372
-S0002,Vihaan Shinde,13,M,7,75,39,1,9,16089,3,3,1,1,0,Rohan Shinde,9821718280
+S0002,Akshith Shinde,13,M,7,75,39,1,9,16089,3,3,1,1,0,Rohan Shinde,9821718280
 S0003,Aarav More,13,M,7,35,36,1,11,19418,0,0,0,0,0,Riya More,9898924723
-S0004,Diya Jadhav,15,F,9,88,39,2,7,6151,0,2,0,0,0,Vihaan Jadhav,9875363762
+S0004,Mokshith Jadhav,15,F,9,88,39,2,7,6151,0,2,0,0,0,Vihaan Jadhav,9875363762
 S0005,Diya Mane,16,M,10,92,71,0,1,13895,1,0,0,1,0,Aditya Mane,9824257388
 S0006,Rohan Jadhav,13,F,7,92,37,1,15,18685,2,2,1,1,0,Riya Jadhav,9877914835
 S0007,Harsh Jadhav,16,F,10,41,83,0,12,15242,2,3,0,1,1,Diya Jadhav,9869058388
