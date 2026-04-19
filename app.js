@@ -9,6 +9,15 @@ let AUTH_TOKEN = localStorage.getItem('vr_token') || '';
 let CURRENT_USER = JSON.parse(localStorage.getItem('vr_user') || 'null');
 let studentsCache = [];
 let schemesCache = [];
+let meetingsCache = JSON.parse(localStorage.getItem('vr_meetings') || '[]');
+let tasksCache = JSON.parse(localStorage.getItem('vr_tasks') || '[]');
+let interventionHistory = JSON.parse(localStorage.getItem('vr_interventions') || '{}');
+let communicationLogs = JSON.parse(localStorage.getItem('vr_comms') || '{}');
+let schoolData = [
+  { id: 'SC001', name: 'ZP Rural School, Nandur', studentCount: 450, highRisk: 12, principal: 'Mr. S.P. Deshmukh' },
+  { id: 'SC002', name: 'GP School, Wadgaon', studentCount: 320, highRisk: 5, principal: 'Mrs. Anita Patil' },
+  { id: 'SC003', name: 'Modern High School, Pune', studentCount: 890, highRisk: 24, principal: 'Dr. V.K. Joshi' }
+];
 
 const demoUsers = [
   { username: 'admin', password: 'admin123', full_name: 'System Administrator', email: 'admin@vidyaraksha.gov', role: 'Administrator' },
@@ -153,7 +162,8 @@ document.addEventListener('click', () => {
 const pageTitles = {
   dashboard:'Dashboard Overview', students:'Student Registry', predict:'Predict Dropout Risk',
   alerts:'SMS Alert Log', schemes:'Government Schemes', upload:'Upload Data', 'add-student':'Add New Student', 
-  about:'About This Project', profile:'Student Profile', admin: 'Admin Control Panel'
+  about:'About This Project', profile:'Student Profile', admin: 'Admin Control Panel',
+  scheduler: 'Event & Meeting Scheduler', tasks: 'Task & Follow-Up Tracker', insights: 'Advanced Data Insights'
 };
 
 function showPage(id) {
@@ -161,10 +171,17 @@ function showPage(id) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   document.getElementById('page-title').textContent = pageTitles[id];
-  const map = ['dashboard','students','predict','alerts','schemes','upload','add-student','about'];
-  const items = document.querySelectorAll('.nav-item');
-  const idx = map.indexOf(id);
-  if (idx >= 0 && items[idx]) items[idx].classList.add('active');
+  
+  // Sidebar highlighting
+  document.querySelectorAll('.nav-item').forEach(item => {
+    const onclick = item.getAttribute('onclick');
+    if (onclick && onclick.includes(`'${id}'`)) item.classList.add('active');
+  });
+
+  if (id === 'insights') initInsightsCharts();
+  if (id === 'scheduler') renderScheduler();
+  if (id === 'tasks') renderTasks();
+  if (id === 'admin') renderAdminSchools();
 }
 
 function toggleSidebar() {
@@ -924,7 +941,391 @@ function initCharts(high, med, low, schoolData) {
 }
 
 // ═══════════════════ INIT ═══════════════════
-(function init() {
+(f// ═══════════════════ STUDENT PROFILE ═══════════════════
+let currentProfileStudent = null;
+
+async function viewProfile(s) {
+  currentProfileStudent = s;
+  showPage('profile');
+  
+  // Header
+  document.getElementById('prof-name').textContent = s.name;
+  document.getElementById('prof-id').textContent = `ID: ${s.student_id} | Admission: ${s.admission_no || 'VR/2024/'+s.id}`;
+  
+  // 1. Basic Info
+  document.getElementById('prof-basic-info').innerHTML = `
+    <div class="vital-row"><span>Class/Section</span> <strong>Grade ${s.grade || 8} - ${s.section || 'A'}</strong></div>
+    <div class="vital-row"><span>Date of Birth</span> <strong>${s.dob || '14/05/2010'}</strong></div>
+    <div class="vital-row"><span>Age / Gender</span> <strong>${s.age || '14'} / ${s.gender === 'M' ? 'Male' : 'Female'}</strong></div>
+    <div class="vital-row"><span>School</span> <strong>${s.school_name || 'ZP Rural School, Nandur'}</strong></div>
+  `;
+  
+  // 2. Contact Info
+  document.getElementById('prof-contact-info').innerHTML = `
+    <div class="vital-row"><span>Parent</span> <strong>${s.parent_name || 'Rajesh Sharma'}</strong></div>
+    <div class="vital-row"><span>Contact</span> <strong>${s.father_phone || s.parent_contact || '+91 98765 43210'}</strong></div>
+    <div class="vital-row"><span>Address</span> <strong style="font-size:11px">${s.address || 'House 42, Ward 5'}, ${s.village || 'Nandur'}</strong></div>
+  `;
+  
+  // 3. Risk Assessment
+  updateProfileRisk(s);
+
+  // Populating Academic Tab
+  document.getElementById('prof-academic-details').innerHTML = `
+    <div class="detail-item"><div class="detail-label">Math</div><div class="detail-value">${s.math_marks || 32}</div></div>
+    <div class="detail-item"><div class="detail-label">Science</div><div class="detail-value">${s.science_marks || 38}</div></div>
+    <div class="detail-item"><div class="detail-label">English</div><div class="detail-value">${s.english_marks || 35}</div></div>
+    <div class="detail-item"><div class="detail-label">Avg. Score</div><div class="detail-value">${s.exam_scores || 35}%</div></div>
+  `;
+
+  // Populating Attendance Tab
+  document.getElementById('prof-attendance-details').innerHTML = `
+    <div class="detail-item"><div class="detail-label">Total Days</div><div class="detail-value">${s.total_days || 120}</div></div>
+    <div class="detail-item"><div class="detail-label">Present</div><div class="detail-value">${s.days_present || 49}</div></div>
+    <div class="detail-item"><div class="detail-label">Absent</div><div class="detail-value">${s.days_absent || 71}</div></div>
+    <div class="detail-item"><div class="detail-label">Percentage</div><div class="detail-value" style="color:${s.attendance_percentage < 75 ? 'var(--accent)' : 'inherit'}">${s.attendance_percentage}%</div></div>
+  `;
+
+  // Family Info
+  document.getElementById('prof-family-details').innerHTML = `
+    <div class="vital-row"><span>Family Income</span> <strong>₹${s.family_income || 6500}/mo</strong></div>
+    <div class="vital-row"><span>Occupation</span> <strong>${s.parent_occupation || 'Daily Labour'}</strong></div>
+    <div class="vital-row"><span>Siblings</span> <strong>${s.siblings || 3}</strong></div>
+    <div class="vital-row"><span>First Gen Learner</span> <strong>${s.first_generation ? 'Yes' : 'No'}</strong></div>
+  `;
+  document.getElementById('prof-parent-details').innerHTML = `
+    <div class="vital-row"><span>Father Education</span> <strong>${s.parent_education_level > 1 ? 'Secondary' : 'Primary/None'}</strong></div>
+    <div class="vital-row"><span>Mother Education</span> <strong>${s.mother_edu || 'Primary'}</strong></div>
+    <div class="vital-row"><span>Distance to School</span> <strong>${s.distance_to_school} km</strong></div>
+    <div class="vital-row"><span>Transport Mode</span> <strong>${s.transport_type || 'Walking'}</strong></div>
+  `;
+
+  // Health & Monitoring
+  document.getElementById('prof-health-details').innerHTML = `
+    <div class="vital-row"><span>Health Condition</span> <strong>${s.health_issues ? 'Chronic (Respiratory)' : 'Regular'}</strong></div>
+    <div class="vital-row"><span>Disability Status</span> <strong>None</strong></div>
+    <div class="vital-row"><span>Last Checkup</span> <strong>12/01/2024</strong></div>
+  `;
+  document.getElementById('prof-behavior-details').innerHTML = `
+    <div class="vital-row"><span>Class Participation</span> <div class="progress-bar"><div class="progress-fill fill-yellow" style="width:40%"></div></div></div>
+    <div class="vital-row"><span>Disciplinary Record</span> <strong>None</strong></div>
+    <div class="vital-row"><span>Counseling Required</span> <strong>Yes (Scheduled)</strong></div>
+  `;
+
+  // Support
+  document.getElementById('prof-scholarship-details').innerHTML = `
+    <div class="detail-item" style="margin-bottom:12px;"><div class="detail-label">Status</div><div class="detail-value">Applied (Processing)</div></div>
+    <div class="detail-item"><div class="detail-label">Program</div><div class="detail-value">Pre-Matric Scholarship for SC/ST</div></div>
+  `;
+
+  // History & Logs
+  renderInterventionsOnProfile(s.id);
+  renderCommLogOnProfile(s.id);
+
+  // Reset to overview tab
+  switchProfileTab('overview');
+  
+  // Charts
+  setTimeout(() => {
+    renderProfCharts(s);
+  }, 100);
+}
+
+function updateProfileRisk(s) {
+  const riskColorCode = s.risk_level === 'High' ? 'var(--accent)' : s.risk_level === 'Medium' ? '#b5810a' : 'var(--accent2)';
+  document.getElementById('prof-risk-score').textContent = s.dropout_risk_score + '%';
+  document.getElementById('prof-risk-score').style.color = riskColorCode;
+  document.getElementById('prof-risk-badge').innerHTML = `<span class="badge ${s.risk_level === 'High' ? 'badge-red' : s.risk_level === 'Medium' ? 'badge-yellow' : 'badge-green'}">${s.risk_level} Risk</span>`;
+  
+  let reasons = [];
+  if (s.attendance_percentage < 75) reasons.push('⚠️ Attendance below 75%');
+  if (s.exam_scores < 40) reasons.push('📉 Poor academic performance');
+  if (s.family_income < 10000) reasons.push('💰 Financial constraints');
+  if (s.distance_to_school > 5) reasons.push('🚶 Distance (>5km)');
+  document.getElementById('prof-risk-reasons').innerHTML = reasons.map(r => `<div style="color:var(--muted); margin-bottom:4px; font-size:12.5px; font-weight:500;">${r}</div>`).join('');
+}
+
+function switchProfileTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+  
+  const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.textContent.toLowerCase().includes(tabId));
+  if (btn) btn.classList.add('active');
+  const content = document.getElementById(`prof-tab-${tabId}`);
+  if (content) content.style.display = 'block';
+}
+
+function renderProfCharts(s) {
+  const opts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
+  
+  // Overview Performance Chart
+  if (charts.profPerfOverview) charts.profPerfOverview.destroy();
+  charts.profPerfOverview = new Chart(document.getElementById('profPerfChartOverview'), {
+    type: 'bar',
+    data: {
+      labels: ['Math', 'Sci', 'Eng', 'Avg'],
+      datasets: [{ data: [s.math_marks||32, s.science_marks||38, s.english_marks||35, s.exam_scores||38], backgroundColor: 'var(--primary)', borderRadius: 4 }]
+    }, options: opts
+  });
+
+  // Overview Attendance Chart
+  if (charts.profAttOverview) charts.profAttOverview.destroy();
+  charts.profAttOverview = new Chart(document.getElementById('profAttChartOverview'), {
+    type: 'line',
+    data: {
+      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+      datasets: [{ data: [1, 1, 0, 1, 0].map(v => v * (Math.random() > 0.3 ? 100 : 0)), borderColor: 'var(--accent2)', tension: 0.4, fill: true, backgroundColor: 'rgba(16, 185, 129, 0.1)' }]
+    }, options: opts
+  });
+
+  // Detailed Full Charts in Academics Tab
+  if (charts.profPerfFull) charts.profPerfFull.destroy();
+  charts.profPerfFull = new Chart(document.getElementById('profPerfChartFull'), {
+    type: 'line',
+    data: {
+        labels: ['Unit 1', 'Unit 2', 'Mid-term', 'Unit 3', 'Final'],
+        datasets: [{ label: 'Score', data: [45, 42, 38, 35, s.exam_scores||35], borderColor: 'var(--primary)', tension: 0.3 }]
+    }, options: { ...opts, plugins: { legend: { display: true } } }
+  });
+}
+
+function renderInterventionsOnProfile(id) {
+  const history = interventionHistory[id] || [
+    { type: 'Counseling', date: '2024-04-10', notes: 'Student lacks interest in subjects due to language barrier.', teacher: 'R. Kumar' },
+    { type: 'Financial Support', date: '2024-03-22', notes: 'Applied for Pre-Matric Scholarship.', teacher: 'S. Patil' }
+  ];
+  const list = document.getElementById('prof-interventions-list');
+  list.innerHTML = history.map(h => `
+    <div class="timeline-item">
+      <div class="timeline-dot"></div>
+      <div class="timeline-date">${h.date}</div>
+      <div class="timeline-content">
+        <strong>${h.type}</strong><br>
+        <span style="color:var(--muted)">Teacher: ${h.teacher}</span>
+        <div style="margin-top:6px">${h.notes}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderCommLogOnProfile(id) {
+  const logs = communicationLogs[id] || [
+    { type: 'SMS', date: '2024-04-15', status: 'Sent', content: 'Attendance warning sent to parent.' },
+    { type: 'Call', date: '2024-04-12', status: 'Completed', content: 'Spoke with father regarding absence.' }
+  ];
+  const list = document.getElementById('prof-comm-log-list');
+  list.innerHTML = logs.map(l => `
+    <div style="background:var(--paper2); padding:12px; border-radius:8px; margin-bottom:12px;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+        <span class="badge badge-gray" style="font-size:10px">${l.type}</span>
+        <span style="font-size:11px; color:var(--muted)">${l.date}</span>
+      </div>
+      <div style="font-size:13px">${l.content}</div>
+      <div style="font-size:11px; color:var(--accent2); margin-top:4px; font-weight:700">Status: ${l.status}</div>
+    </div>
+  `).join('');
+}
+
+function handleGlobalSearch(q) {
+  const el = document.getElementById('global-search-results');
+  if (!q || q.length < 2) { el.style.display = 'none'; return; }
+  
+  const results = studentsCache.filter(s => 
+    s.name.toLowerCase().includes(q.toLowerCase()) || 
+    s.student_id.toLowerCase().includes(q.toLowerCase()) ||
+    (s.father_phone && s.father_phone.includes(q))
+  );
+
+  if (results.length === 0) {
+    el.innerHTML = '<div style="padding:16px; font-size:13px; color:var(--muted)">No matches found</div>';
+  } else {
+    el.innerHTML = results.map(s => `
+      <div class="search-result-item" onclick="viewProfile(${JSON.stringify(s).replace(/'/g,"&#39;")}); document.getElementById('global-search-results').style.display='none';">
+        <img class="search-result-avatar" src="https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random">
+        <div class="search-result-info">
+          <span class="search-result-name">${s.name}</span>
+          <span class="search-result-meta">${s.student_id} · Grade ${s.grade} · ${s.risk_level} Risk</span>
+        </div>
+      </div>
+    `).join('');
+  }
+  el.style.display = 'block';
+}
+
+function handleDocUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  alert(`Document "${file.name}" uploaded successfully for ${currentProfileStudent.name}.`);
+  const list = document.getElementById('prof-document-list');
+  if (list.textContent.includes('No documents')) list.innerHTML = '';
+  list.innerHTML += `
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:10px; background:var(--paper); border-radius:8px; margin-bottom:8px; border:1px solid var(--border);">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:20px;">📄</span>
+        <div><div style="font-size:13px; font-weight:600;">${file.name}</div><div style="font-size:11px; color:var(--muted)">Just now · ${(file.size/1024).toFixed(1)} KB</div></div>
+      </div>
+      <span style="color:var(--primary); font-size:12px; font-weight:700; cursor:pointer;">View</span>
+    </div>
+  `;
+}
+
+function renderScheduler() {
+  const tbody = document.getElementById('scheduler-tbody');
+  const datalist = document.getElementById('student-list');
+  datalist.innerHTML = studentsCache.map(s => `<option value="${s.name}">`).join('');
+  
+  tbody.innerHTML = (meetingsCache.length ? meetingsCache : [
+    { type: 'Counseling Session', student: 'Priya Sharma', datetime: '2024-04-20T10:30', status: 'Scheduled' },
+    { type: 'Parent Meeting', student: 'Rahul Patil', datetime: '2024-04-21T14:00', status: 'Pending' }
+  ]).map((m, i) => `
+    <tr>
+      <td><strong>${m.type}</strong></td>
+      <td>${m.student}</td>
+      <td>${m.datetime.replace('T', ' ')}</td>
+      <td><span class="badge ${m.status==='Scheduled'?'badge-green':'badge-yellow'}">${m.status}</span></td>
+      <td><button class="btn btn-outline btn-sm">Reschedule</button></td>
+    </tr>
+  `).join('');
+}
+
+function renderTasks() {
+  const tbody = document.getElementById('tasks-tbody');
+  const teachers = ['Rajesh Kumar', 'Anita Patil', 'V.K. Joshi'];
+  document.getElementById('task-teacher').innerHTML = teachers.map(t => `<option>${t}</option>`).join('');
+  
+  tbody.innerHTML = (tasksCache.length ? tasksCache : [
+    { title: 'Follow up on Priya\'s attendance', teacher: 'Rajesh Kumar', deadline: '2024-04-18', status: 'Overdue' },
+    { title: 'Prepare monthly risk report', teacher: 'Anita Patil', deadline: '2024-04-30', status: 'In Progress' }
+  ]).map(t => `
+    <tr>
+      <td><strong>${t.title}</strong></td>
+      <td>${t.teacher}</td>
+      <td>${t.deadline}</td>
+      <td><span class="badge ${t.status==='Overdue'?'badge-red':t.status==='Completed'?'badge-green':'badge-yellow'}">${t.status}</span></td>
+      <td><button class="btn btn-outline btn-sm">Mark Done</button></td>
+    </tr>
+  `).join('');
+}
+
+function openScheduleModal() { document.getElementById('schedule-modal').classList.add('open'); }
+function openTaskModal() { document.getElementById('task-modal').classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function submitSchedule() {
+  const m = {
+    type: document.getElementById('sch-type').value,
+    student: document.getElementById('sch-student').value,
+    datetime: document.getElementById('sch-date').value + 'T' + document.getElementById('sch-time').value,
+    status: 'Scheduled'
+  };
+  meetingsCache.unshift(m);
+  localStorage.setItem('vr_meetings', JSON.stringify(meetingsCache));
+  renderScheduler();
+  closeModal('schedule-modal');
+}
+
+function submitTask() {
+  const t = {
+    title: document.getElementById('task-name').value,
+    teacher: document.getElementById('task-teacher').value,
+    deadline: document.getElementById('task-deadline').value,
+    status: 'Pending'
+  };
+  tasksCache.unshift(t);
+  localStorage.setItem('vr_tasks', JSON.stringify(tasksCache));
+  renderTasks();
+  closeModal('task-modal');
+}
+
+
+function renderAdminSchools() {
+  const panel = document.getElementById('page-admin');
+  const existingSchools = panel.querySelector('.school-list-container');
+  if (existingSchools) existingSchools.remove();
+  
+  const container = document.createElement('div');
+  container.className = 'card full-col school-list-container';
+  container.style.marginTop = '24px';
+  container.innerHTML = `
+    <div class="card-header"><div class="card-title">Multi-School Management</div></div>
+    <div class="card-body" style="padding:0;">
+      ${schoolData.map(s => `
+        <div class="school-list-item">
+          <div class="school-info">
+            <div class="school-icon">🏫</div>
+            <div>
+              <div style="font-weight:700; font-size:14px;">${s.name}</div>
+              <div style="font-size:12px; color:var(--muted)">Principal: ${s.principal} · ID: ${s.id}</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:16px; text-align:right;">
+            <div><div style="font-size:11px; text-transform:uppercase; color:var(--muted)">Students</div><div style="font-weight:700">${s.studentCount}</div></div>
+            <div><div style="font-size:11px; text-transform:uppercase; color:var(--accent)">High Risk</div><div style="font-weight:700; color:var(--accent)">${s.highRisk}</div></div>
+            <button class="btn btn-outline btn-sm">Manage</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  panel.appendChild(container);
+}
+
+function initInsightsCharts() {
+  const opts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { family:'DM Sans', size:12 } } } } };
+  
+  if (charts.insightsGrade) charts.insightsGrade.destroy();
+  charts.insightsGrade = new Chart(document.getElementById('insightsGradeChart'), {
+    type: 'bar',
+    data: { labels: ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10'], datasets: [{ label: 'Avg Risk %', data: [42, 58, 45, 38], backgroundColor: 'var(--primary)' }] },
+    options: opts
+  });
+
+  if (charts.insightsGender) charts.insightsGender.destroy();
+  charts.insightsGender = new Chart(document.getElementById('insightsGenderChart'), {
+    type: 'pie',
+    data: { labels: ['Male', 'Female'], datasets: [{ data: [65, 35], backgroundColor: ['#4f46e5', '#10b981'] }] },
+    options: opts
+  });
+
+  if (charts.insightsIncome) charts.insightsIncome.destroy();
+  charts.insightsIncome = new Chart(document.getElementById('insightsIncomeChart'), {
+    type: 'bar',
+    data: {
+      labels: ['<5k', '5k-10k', '10k-20k', '>20k'],
+      datasets: [{ label: 'Student Count', data: [45, 62, 30, 15], backgroundColor: 'var(--accent3)' }]
+    }, options: opts
+  });
+
+  if (charts.insightsAtt) charts.insightsAtt.destroy();
+  charts.insightsAtt = new Chart(document.getElementById('insightsAttChart'), {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: 'Attendance vs Risk',
+        data: Array.from({length: 20}, () => ({x: Math.random()*100, y: Math.random()*100})),
+        backgroundColor: 'var(--primary)'
+      }]
+    }, options: opts
+  });
+
+  if (charts.insightsDist) charts.insightsDist.destroy();
+  charts.insightsDist = new Chart(document.getElementById('insightsDistChart'), {
+    type: 'bar',
+    data: {
+      labels: ['<1km', '1-3km', '3-5km', '>5km'],
+      datasets: [{ label: 'High Risk Students', data: [2, 8, 15, 25], backgroundColor: 'var(--accent)' }]
+    }, options: opts
+  });
+}
+
+function saveTeacherRemarks() {
+  const remarks = document.getElementById('prof-teacher-remarks').value;
+  if (!remarks) return alert('Enter remarks');
+  alert('Teacher remarks saved privately.');
+}
+
+// ═══════════════════ INIT ═══════════════════
+function init() {
   if (AUTH_TOKEN && CURRENT_USER) {
     document.getElementById('login-overlay').classList.add('hidden');
     const nameEl = document.getElementById('topbar-name');
@@ -946,295 +1347,19 @@ function initCharts(high, med, low, schoolData) {
       enterOfflineMode();
     });
   }
-})();
-// ═══════════════════ STUDENT PROFILE ═══════════════════
-let currentProfileStudent = null;
-
-async function viewProfile(s) {
-  currentProfileStudent = s;
-  showPage('profile');
-  document.getElementById('page-title').textContent = 'Student Profile';
-  
-  // Header
-  document.getElementById('prof-name').textContent = s.name;
-  document.getElementById('prof-id').textContent = `ID: ${s.student_id} | Admission: ${s.admission_no || 'N/A'}`;
-  
-  // 1. Basic Info
-  document.getElementById('prof-basic-info').innerHTML = `
-    <div class="vital-row"><span>Class/Section</span> <strong>${s.grade} - ${s.section || 'A'}</strong></div>
-    <div class="vital-row"><span>Date of Birth</span> <strong>${s.dob || '—'}</strong></div>
-    <div class="vital-row"><span>Gender</span> <strong>${s.gender || '—'}</strong></div>
-    <div class="vital-row"><span>School</span> <strong>${s.school_name || 'ZP School'}</strong></div>
-  `;
-  
-  // 2. Contact Info
-  document.getElementById('prof-contact-info').innerHTML = `
-    <div class="vital-row"><span>Parent</span> <strong>${s.parent_name || '—'}</strong></div>
-    <div class="vital-row"><span>Father Phone</span> <strong>${s.father_phone || s.parent_contact || '—'}</strong></div>
-    <div class="vital-row"><span>Mother Phone</span> <strong>${s.mother_phone || '—'}</strong></div>
-    <div class="vital-row"><span>Email</span> <strong>${s.parent_email || '—'}</strong></div>
-    <div class="vital-row"><span>Emergency</span> <strong>${s.emergency_contact || '—'}</strong></div>
-    <div class="vital-row"><span>Address</span> <strong style="font-size:11px">${s.address || '—'}, ${s.village || ''}</strong></div>
-  `;
-  
-  // 3. Risk Assessment
-  const riskColorCode = s.risk_level === 'High' ? 'var(--accent)' : s.risk_level === 'Medium' ? '#b5810a' : 'var(--accent2)';
-  document.getElementById('prof-risk-score').textContent = s.dropout_risk_score + '%';
-  document.getElementById('prof-risk-score').style.color = riskColorCode;
-  document.getElementById('prof-risk-badge').innerHTML = `<span class="badge ${s.risk_level === 'High' ? 'badge-red' : s.risk_level === 'Medium' ? 'badge-yellow' : 'badge-green'}">${s.risk_level} Risk</span>`;
-  
-  let reasons = [];
-  if (s.attendance_percentage < 75) reasons.push('⚠️ Attendance below critical 75%');
-  if (s.exam_scores < 40) reasons.push('📉 Poor academic performance');
-  if (s.family_income < 10000) reasons.push('💰 Low family income (Financial Risk)');
-  if (s.distance_to_school > 5) reasons.push('🚶 Long distance to school');
-  document.getElementById('prof-risk-reasons').innerHTML = reasons.map(r => `<div style="color:var(--muted); margin-bottom:4px; font-size:12.5px">${r}</div>`).join('');
-
-  // 4. Academics
-  document.getElementById('prof-academics').innerHTML = `
-    <div style="background:var(--paper); padding:10px; border-radius:8px; text-align:center;">
-       <div style="font-size:10px; color:var(--muted)">Math</div><div style="font-weight:700">${s.math_marks || '—'}</div>
-    </div>
-    <div style="background:var(--paper); padding:10px; border-radius:8px; text-align:center;">
-       <div style="font-size:10px; color:var(--muted)">Science</div><div style="font-weight:700">${s.science_marks || '—'}</div>
-    </div>
-    <div style="background:var(--paper); padding:10px; border-radius:8px; text-align:center;">
-       <div style="font-size:10px; color:var(--muted)">English</div><div style="font-weight:700">${s.english_marks || '—'}</div>
-    </div>
-  `;
-  renderProfPerfChart(s);
-
-  // 5. Attendance
-  document.getElementById('prof-attendance-stats').innerHTML = `
-    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-       <span style="font-size:12px; color:var(--muted)">Percentage</span><strong style="color:${s.attendance_percentage < 75 ? 'var(--accent)' : 'inherit'}">${s.attendance_percentage}%</strong>
-    </div>
-    <div style="display:flex; justify-content:space-between; font-size:12px;">
-       <span>Present: ${s.days_present || 0}</span> <span>Absent: ${s.days_absent || 0}</span>
-    </div>
-  `;
-  renderProfAttChart(s);
-
-  // 6. Family & Background
-  document.getElementById('prof-family-info').innerHTML = `
-    <div class="vital-row"><span>Income</span> <strong>₹${s.family_income || '—'}/mo</strong></div>
-    <div class="vital-row"><span>Occupation</span> <strong>${s.parent_occupation || '—'}</strong></div>
-    <div class="vital-row"><span>Siblings</span> <strong>${s.siblings || '—'}</strong></div>
-    <div class="vital-row"><span>First Gen</span> <strong>${s.first_generation ? 'Yes' : 'No'}</strong></div>
-    <div class="vital-row"><span>Transport</span> <strong>${s.transport_type || '—'} (${s.distance_to_school}km)</strong></div>
-  `;
-
-  // 7. Alerts
-  let alerts = [];
-  if (s.attendance_percentage < 75) alerts.push('Attendance critical (Under 75%)');
-  if (s.exam_scores < 40) alerts.push('Multiple subjects failing/below-avg');
-  if (s.days_absent > 10) alerts.push('Excessive total absences this term');
-  document.getElementById('prof-alerts').innerHTML = alerts.length ? alerts.map(a => `<div style="background:var(--red-bg); color:var(--accent); padding:10px; border-radius:8px; margin-bottom:8px; font-size:12px; font-weight:600;">🔔 ${a}</div>`).join('') : '<div style="color:var(--muted); font-size:12px">No active alerts.</div>';
-
-  // 8. Interventions
-  renderInterventionsOnProfile(s.id);
-  
-  // 9. Comm Log
-  document.getElementById('prof-comm-log').innerHTML = `
-    <div style="font-size:12px; color:var(--muted); margin-bottom:12px;">Recent Communications</div>
-    <div style="background:var(--paper); padding:10px; border-radius:8px; margin-bottom:8px;">
-       <div style="font-weight:700; font-size:12px;">SMS Sent</div>
-       <div style="font-size:11px; color:var(--muted)">2 days ago - Attendance Alert</div>
-    </div>
-    <div style="background:var(--paper); padding:10px; border-radius:8px; margin-bottom:8px;">
-       <div style="font-weight:700; font-size:12px;">Auto-Email</div>
-       <div style="font-size:11px; color:var(--muted)">1 week ago - Monthly Report</div>
-    </div>
-  `;
 }
 
-function triggerCall() {
-  alert("Initiating secure call to parent via school VoIP gateway...");
-  // Simulate log entry
-  const log = document.getElementById('prof-comm-log');
-  log.innerHTML = `<div style="background:var(--paper); padding:10px; border-radius:8px; margin-bottom:8px; border-left:3px solid var(--primary)">
-       <div style="font-weight:700; font-size:12px;">Phone Call Made</div>
-       <div style="font-size:11px; color:var(--muted)">Just now - Routine Checkup</div>
-    </div>` + (log.innerHTML || '');
-}
-
-function triggerEmail() {
-  const msg = prompt("Enter email message:");
-  if (msg) alert("Email sent to parent successfully.");
-}
-
-function renderProfPerfChart(s) {
-  const ctx = document.getElementById('profPerfChart').getContext('2d');
-  if (charts.profPerf) charts.profPerf.destroy();
-  charts.profPerf = new Chart(ctx, {
-    type: 'radar',
-    data: {
-      labels: ['Math', 'Science', 'English', 'Attendance', 'Homework'],
-      datasets: [{
-        label: 'Current Performance',
-        data: [s.math_marks || 0, s.science_marks || 0, s.english_marks || 0, s.attendance_percentage, s.homework_completion || 60],
-        backgroundColor: 'rgba(79, 70, 229, 0.2)',
-        borderColor: 'rgb(79, 70, 229)',
-        pointBackgroundColor: 'rgb(79, 70, 229)'
-      }]
-    },
-    options: {
-      scales: { r: { min: 0, max: 100, ticks: { display: false } } },
-      plugins: { legend: { display: false } }
-    }
-  });
-}
-
-function renderProfAttChart(s) {
-  const ctx = document.getElementById('profAttChart').getContext('2d');
-  if (charts.profAtt) charts.profAtt.destroy();
-  charts.profAtt = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-      datasets: [{
-        data: [1, 1, 0, 1, 0].map(v => v * (Math.random() > 0.3 ? 1 : 0)),
-        backgroundColor: 'var(--primary)',
-        borderRadius: 4
-      }]
-    },
-    options: {
-      scales: { y: { display: false }, x: { grid: { display: false } } },
-      plugins: { legend: { display: false } }
-    }
-  });
-}
-
-function renderInterventionsOnProfile(studentId) {
-  const timeline = [
-    { type: 'Alert', title: 'High Risk Warning Triggered', date: '2 days ago', outcome: 'Automatic SMS sent to parent.' },
-    { type: 'Intervention', title: 'Counseling Session', date: '1 week ago', outcome: 'Student discussed transport issues.' },
-    { type: 'System', title: 'Record Created', date: '3 weeks ago', outcome: 'Initial data entry from registry.' }
-  ];
-  
-  document.getElementById('prof-interventions').innerHTML = timeline.map(t => `
-    <div class="alert-item">
-      <div class="alert-dot" style="background:${t.type==='Alert'?'var(--accent)':t.type==='Intervention'?'var(--primary)':'var(--muted)'}"></div>
-      <div>
-        <div class="action-badge action-${t.type.toLowerCase() === 'intervention' ? 'visit' : t.type.toLowerCase()}">${t.type}</div>
-        <div style="font-weight:700; font-size:14px;">${t.title}</div>
-        <div style="font-size:12px; color:var(--muted); margin-bottom:4px;">${t.date}</div>
-        <div style="font-size:13px;">${t.outcome}</div>
-      </div>
-    </div>
-  `).join('');
-}
-
-// ═══════════════════ INTERVENTIONS ═══════════════════
-function openInterventionModal() {
-  document.getElementById('intervention-modal').classList.add('open');
-}
-function closeInterventionModal() {
-  document.getElementById('intervention-modal').classList.remove('open');
-}
-function submitIntervention() {
-  const type = document.getElementById('int-type').value;
-  const notes = document.getElementById('int-notes').value;
-  if (!notes) return alert('Enter notes');
-  
-  const item = document.createElement('div');
-  item.className = 'alert-item';
-  item.innerHTML = `
-    <div class="alert-dot" style="background:var(--primary)"></div>
-    <div>
-      <div class="action-badge action-visit">Intervention</div>
-      <div style="font-weight:700; font-size:14px;">${type}</div>
-      <div style="font-size:12px; color:var(--muted); margin-bottom:4px;">Just Now</div>
-      <div style="font-size:13px;">${notes}</div>
-    </div>
-  `;
-  document.getElementById('prof-timeline').prepend(item);
-  closeInterventionModal();
-  document.getElementById('int-notes').value = '';
-}
-
-// ═══════════════════ NOTIFICATIONS ═══════════════════
-function toggleNotifs() {
-  document.getElementById('notif-center').classList.toggle('open');
-}
-function openEditModal(s) {
-  document.getElementById('edit-id').value = s.id || s.student_id;
-  document.getElementById('edit-name').value = s.name;
-  document.getElementById('edit-grade').value = s.grade;
-  document.getElementById('edit-section').value = s.section || 'A';
-  document.getElementById('edit-att').value = s.attendance_percentage;
-  document.getElementById('edit-score').value = s.exam_scores;
-  document.getElementById('edit-dist').value = s.distance_to_school;
-  document.getElementById('edit-inc').value = s.family_income;
-  document.getElementById('edit-student-modal').classList.add('open');
-}
-
-function closeEditModal() {
-  document.getElementById('edit-student-modal').classList.remove('open');
-}
-
-async function submitEditStudent() {
-  const id = document.getElementById('edit-id').value;
-  const updatedData = {
-    name: document.getElementById('edit-name').value,
-    grade: +document.getElementById('edit-grade').value,
-    section: document.getElementById('edit-section').value,
-    attendance_percentage: +document.getElementById('edit-att').value,
-    exam_scores: +document.getElementById('edit-score').value,
-    distance_to_school: +document.getElementById('edit-dist').value,
-    family_income: +document.getElementById('edit-inc').value
-  };
-
-  const res = await api(`/students/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(updatedData)
-  });
-
-  if (res && res.student) {
-    alert('Student updated successfully!');
-    loadDashboardData();
-  } else {
-    // Offline update
-    const idx = studentsCache.findIndex(s => (s.id == id || s.student_id == id));
-    if (idx > -1) {
-      const original = studentsCache[idx];
-      const merged = { ...original, ...updatedData };
-      const rs = computeRisk(merged);
-      merged.dropout_risk_score = Math.round(rs * 100);
-      merged.risk_level = riskLevel(rs);
-      studentsCache[idx] = merged;
-      renderTable(studentsCache);
-      alert('Student updated locally (Simulation Mode)');
-    }
-  }
-  closeEditModal();
-}
-
-function exportReport(format) {
-  alert(`Generating dropout risk report in ${format} format...\nThis will include school-wide statistics and high-risk lists.`);
-}
-
-function addTeacherSim() {
-  const name = prompt("Enter Teacher Name:");
-  if (!name) return;
-  const email = name.toLowerCase().replace(' ', '.') + '@school.edu.in';
-  const tbody = document.getElementById('teacher-tbody');
-  const tr = document.createElement('tr');
-  tr.innerHTML = `<td>${name}</td><td>${email}</td><td>ZP Rural School</td><td><span class="badge badge-green">Active</span></td>`;
-  tbody.appendChild(tr);
-  
-  const log = document.getElementById('sys-logs');
-  const div = document.createElement('div');
-  div.textContent = `[${new Date().toISOString().replace('T', ' ').slice(0, 19)}] INFO: Admin added new teacher '${name}'.`;
-  log.prepend(div);
-}
-
-// Close components on click away
+// Global click handler to close dropdowns
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.notif-center')) {
     document.getElementById('notif-center')?.classList.remove('open');
   }
-  if (!e.target.closest('.profile-dropdown')) {
-    document.getElementById('profile-dropdown')?.classList.remove('open'); // fixed selector logic
+  const profileDropdown = document.getElementById('profile-dropdown');
+  if (!e.target.closest('#topbar-avatar') && !e.target.closest('#topbar-name') && profileDropdown) {
+    profileDropdown.style.display = 'none';
   }
 });
+
+init();
+
+
