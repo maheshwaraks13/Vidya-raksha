@@ -941,7 +941,7 @@ function initCharts(high, med, low, schoolData) {
 }
 
 // ═══════════════════ INIT ═══════════════════
-(f// ═══════════════════ STUDENT PROFILE ═══════════════════
+// ═══════════════════ STUDENT PROFILE ═══════════════════
 let currentProfileStudent = null;
 
 async function viewProfile(s) {
